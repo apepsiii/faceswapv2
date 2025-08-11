@@ -72,12 +72,12 @@ face_swap.db
 *.log
 
 # Static/Results/Uploads
-static/uploads/
-static/results/
-static/ar_results/
-static/ar_assets/
-static/images/
-static/templates/
+# static/uploads/
+# static/results/
+# static/ar_results/
+# static/ar_assets/
+# static/images/
+# static/templates/
 
 # Ignore test outputs
 test_output/

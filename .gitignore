@@ -60,6 +60,8 @@ dmypy.json
 .env.*
 *.env
 
+secret.md
+
 # VS Code
 .vscode/
 

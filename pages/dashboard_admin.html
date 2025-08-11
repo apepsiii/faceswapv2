@@ -1,0 +1,1120 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Dashboard - Platinum Cineplex</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Poppins', sans-serif;
+        }
+
+        body {
+            background: #f5f6fa;
+            display: flex;
+            min-height: 100vh;
+            color: #2c3e50;
+        }
+
+        .sidebar {
+            width: 260px;
+            background: linear-gradient(180deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            position: fixed;
+            height: 100vh;
+            overflow-y: auto;
+        }
+
+        .sidebar .logo {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+
+        .sidebar .logo img {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            margin-bottom: 10px;
+        }
+
+        .sidebar .logo h2 {
+            font-size: 1.3rem;
+            font-weight: 700;
+        }
+
+        .sidebar .logo p {
+            font-size: 0.8rem;
+            opacity: 0.8;
+            margin-top: 5px;
+        }
+
+        .nav-item {
+            display: block;
+            padding: 15px 20px;
+            color: rgba(255,255,255,0.8);
+            text-decoration: none;
+            border-radius: 10px;
+            margin-bottom: 8px;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .nav-item.active,
+        .nav-item:hover {
+            background: rgba(255,255,255,0.1);
+            color: white;
+            transform: translateX(5px);
+        }
+
+        .nav-item i {
+            font-size: 1.1rem;
+            width: 20px;
+        }
+
+        .logout-btn {
+            margin-top: auto;
+            padding: 12px 20px;
+            background: rgba(255,255,255,0.1);
+            border: 1px solid rgba(255,255,255,0.2);
+            color: white;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            justify-content: center;
+        }
+
+        .logout-btn:hover {
+            background: rgba(255,255,255,0.2);
+        }
+
+        .main-content {
+            flex: 1;
+            margin-left: 260px;
+            padding: 30px;
+            overflow-y: auto;
+        }
+
+        .header {
+            display: flex;
+            justify-content: between;
+            align-items: center;
+            margin-bottom: 30px;
+            background: white;
+            padding: 20px 30px;
+            border-radius: 15px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+        }
+
+        .header h1 {
+            color: #2c3e50;
+            font-size: 1.8rem;
+            font-weight: 700;
+        }
+
+        .header .admin-info {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            margin-left: auto;
+        }
+
+        .header .admin-info .user-avatar {
+            width: 40px;
+            height: 40px;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: 600;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .stat-card {
+            background: white;
+            padding: 25px;
+            border-radius: 15px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+            display: flex;
+            align-items: center;
+            gap: 20px;
+            transition: transform 0.3s ease;
+        }
+
+        .stat-card:hover {
+            transform: translateY(-5px);
+        }
+
+        .stat-icon {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            color: white;
+        }
+
+        .stat-icon.users { background: linear-gradient(135deg, #3498db, #2980b9); }
+        .stat-icon.face-swap { background: linear-gradient(135deg, #e74c3c, #c0392b); }
+        .stat-icon.ar-photos { background: linear-gradient(135deg, #f39c12, #e67e22); }
+        .stat-icon.revenue { background: linear-gradient(135deg, #27ae60, #229954); }
+
+        .stat-info h3 {
+            font-size: 1.8rem;
+            font-weight: 700;
+            color: #2c3e50;
+            margin-bottom: 5px;
+        }
+
+        .stat-info p {
+            color: #7f8c8d;
+            font-size: 0.9rem;
+        }
+
+        .stat-info .today {
+            font-size: 0.8rem;
+            color: #27ae60;
+            margin-top: 3px;
+        }
+
+        .charts-section {
+            display: grid;
+            grid-template-columns: 2fr 1fr;
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .chart-container {
+            background: white;
+            padding: 25px;
+            border-radius: 15px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+        }
+
+        .chart-container h3 {
+            margin-bottom: 20px;
+            color: #2c3e50;
+            font-size: 1.2rem;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .users-section {
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+            overflow: hidden;
+        }
+
+        .users-header {
+            padding: 20px 25px;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .users-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .users-table th {
+            background: #f8f9fa;
+            padding: 12px 15px;
+            text-align: left;
+            font-weight: 600;
+            color: #2c3e50;
+            font-size: 0.9rem;
+        }
+
+        .users-table td {
+            padding: 12px 15px;
+            border-bottom: 1px solid #ecf0f1;
+            font-size: 0.9rem;
+        }
+
+        .users-table tr:hover {
+            background: #f8f9fa;
+        }
+
+        .badge {
+            padding: 4px 8px;
+            border-radius: 6px;
+            font-size: 0.8rem;
+            font-weight: 600;
+        }
+
+        .badge.credits-positive { background: #d4edda; color: #155724; }
+        .badge.credits-zero { background: #f8d7da; color: #721c24; }
+        .badge.role-admin { background: #d1ecf1; color: #0c5460; }
+        .badge.role-user { background: #e2e3e5; color: #383d41; }
+
+        .refresh-indicator {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: #27ae60;
+            color: white;
+            padding: 8px 15px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            display: none;
+            z-index: 1000;
+        }
+
+        @media (max-width: 768px) {
+            .sidebar {
+                width: 70px;
+                padding: 15px 5px;
+            }
+
+            .sidebar .logo h2,
+            .sidebar .logo p,
+            .nav-item span {
+                display: none;
+            }
+
+            .nav-item {
+                justify-content: center;
+                padding: 12px 5px;
+            }
+
+            .main-content {
+                margin-left: 70px;
+                padding: 20px 15px;
+            }
+
+            .stats-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .charts-section {
+                grid-template-columns: 1fr;
+            }
+
+            .header {
+                flex-direction: column;
+                gap: 15px;
+                text-align: center;
+            }
+        }
+
+        .loading {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 40px;
+            color: #7f8c8d;
+        }
+
+        .spinner {
+            width: 30px;
+            height: 30px;
+            border: 3px solid #ecf0f1;
+            border-top: 3px solid #667eea;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-right: 10px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <!-- Refresh Indicator -->
+    <div class="refresh-indicator" id="refreshIndicator">
+        <i class="fas fa-sync-alt"></i> Refreshing data...
+    </div>
+
+    <!-- Sidebar -->
+    <div class="sidebar">
+        <div class="logo">
+            <img src="/static/images/logo.png" alt="Logo">
+            <h2>Admin Panel</h2>
+            <p>Platinum Cineplex</p>
+        </div>
+        
+        <nav>
+            <a href="#" class="nav-item active" data-page="dashboard">
+                <i class="fas fa-chart-line"></i>
+                <span>Dashboard</span>
+            </a>
+            <a href="#" class="nav-item" data-page="users">
+                <i class="fas fa-users"></i>
+                <span>User Management</span>
+            </a>
+            <a href="#" class="nav-item" data-page="settings">
+                <i class="fas fa-cog"></i>
+                <span>Settings</span>
+            </a>
+            <a href="#" class="nav-item" data-page="reports">
+                <i class="fas fa-file-alt"></i>
+                <span>Reports</span>
+            </a>
+        </nav>
+        
+        <button class="logout-btn" onclick="logout()">
+            <i class="fas fa-sign-out-alt"></i>
+            <span>Logout</span>
+        </button>
+    </div>
+
+    <!-- Main Content -->
+    <div class="main-content">
+        <!-- Header -->
+        <div class="header">
+            <h1><i class="fas fa-chart-line"></i> Dashboard Overview</h1>
+            <div class="admin-info">
+                <div>
+                    <strong id="adminName">Admin</strong>
+                    <div style="font-size: 0.8rem; color: #7f8c8d;">Last refresh: <span id="lastRefresh">-</span></div>
+                </div>
+                <div class="user-avatar" id="adminAvatar">A</div>
+            </div>
+        </div>
+
+        <!-- Statistics Cards -->
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-icon users">
+                    <i class="fas fa-users"></i>
+                </div>
+                <div class="stat-info">
+                    <h3 id="totalUsers">-</h3>
+                    <p>Total Users</p>
+                    <div class="today">Active today: <span id="activeToday">-</span></div>
+                </div>
+            </div>
+
+            <div class="stat-card">
+                <div class="stat-icon face-swap">
+                    <i class="fas fa-exchange-alt"></i>
+                </div>
+                <div class="stat-info">
+                    <h3 id="totalFaceSwap">-</h3>
+                    <p>Face Swap Photos</p>
+                    <div class="today">Today: <span id="todayFaceSwap">-</span></div>
+                </div>
+            </div>
+
+            <div class="stat-card">
+                <div class="stat-icon ar-photos">
+                    <i class="fas fa-camera"></i>
+                </div>
+                <div class="stat-info">
+                    <h3 id="totalARPhotos">-</h3>
+                    <p>AR Photos</p>
+                    <div class="today">Today: <span id="todayARPhotos">-</span></div>
+                </div>
+            </div>
+
+            <div class="stat-card">
+                <div class="stat-icon revenue">
+                    <i class="fas fa-money-bill-wave"></i>
+                </div>
+                <div class="stat-info">
+                    <h3 id="totalRevenue">-</h3>
+                    <p>Total Revenue</p>
+                    <div class="today">Today: <span id="todayRevenue">-</span></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Charts Section -->
+        <div class="charts-section">
+            <!-- <div class="chart-container">
+                <h3><i class="fas fa-chart-line"></i> Revenue Trend (30 Days)</h3>
+                <canvas id="revenueChart" width="400" height="200"></canvas>
+            </div> -->
+
+            <!-- <div class="chart-container">
+                <h3><i class="fas fa-chart-pie"></i> Photo Distribution</h3>
+                <canvas id="photoDistChart" width="200" height="200"></canvas>
+            </div> -->
+        </div>
+
+        <!-- Users Table -->
+        <div class="users-section">
+            <div class="users-header">
+                <h3><i class="fas fa-users"></i> Recent Users Activity</h3>
+                <button class="btn" onclick="refreshUsers()">
+                    <i class="fas fa-sync-alt"></i> Refresh
+                </button>
+            </div>
+            
+            <div id="usersTableContainer">
+                <div class="loading">
+                    <div class="spinner"></div>
+                    Loading users data...
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        class AdminDashboard {
+            constructor() {
+                this.token = localStorage.getItem('token');
+                this.user = JSON.parse(localStorage.getItem('user') || '{}');
+                this.charts = {};
+                this.init();
+            }
+
+            async init() {
+                // Check admin access
+                if (!this.token || this.user.role !== 'admin') {
+                    alert('Admin access required!');
+                    window.location.href = '/login';
+                    return;
+                }
+
+                // Set admin info
+                document.getElementById('adminName').textContent = this.user.username;
+                document.getElementById('adminAvatar').textContent = this.user.username.charAt(0).toUpperCase();
+
+                // Load dashboard data
+                await this.loadDashboardData();
+                await this.loadUsersData();
+                this.initCharts();
+                this.setupAutoRefresh();
+
+                // Update last refresh time
+                this.updateRefreshTime();
+            }
+
+            async loadDashboardData() {
+                try {
+                    this.showRefreshIndicator();
+                    
+                    // Add timeout untuk mencegah hanging
+                    const controller = new AbortController();
+                    const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
+                    
+                    const response = await fetch('/api/admin/dashboard/stats', {
+                        headers: {'Authorization': `Bearer ${this.token}`},
+                        signal: controller.signal
+                    });
+
+                    clearTimeout(timeoutId);
+
+                    if (!response.ok) {
+                        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                    }
+                    
+                    const data = await response.json();
+
+                    if (data.success) {
+                        this.updateStatsCards(data);
+                    } else {
+                        throw new Error(data.message || 'Invalid response format');
+                    }
+                } catch (error) {
+                    console.error('Dashboard data error:', error);
+                    if (error.name === 'AbortError') {
+                        this.showError('Request timeout - Server may be slow');
+                    } else {
+                        this.showError(`Failed to load dashboard: ${error.message}`);
+                    }
+                    
+                    // Fallback to demo data
+                    this.loadDemoData();
+                } finally {
+                    this.hideRefreshIndicator();
+                }
+            }
+
+            loadDemoData() {
+                console.log('Loading demo data as fallback...');
+                const demoData = {
+                    success: true,
+                    total_users: 8,
+                    total_face_swap: 156,
+                    total_ar_photos: 89,
+                    total_revenue: 375000,
+                    today_stats: {
+                        face_swap: 12,
+                        ar_photos: 8,
+                        revenue: 45000,
+                        transactions: 9
+                    }
+                };
+                this.updateStatsCards(demoData);
+            }
+
+            updateStatsCards(data) {
+                document.getElementById('totalUsers').textContent = data.total_users;
+                document.getElementById('totalFaceSwap').textContent = data.total_face_swap;
+                document.getElementById('totalARPhotos').textContent = data.total_ar_photos;
+                document.getElementById('totalRevenue').textContent = this.formatCurrency(data.total_revenue);
+
+                // Today's stats
+                document.getElementById('todayFaceSwap').textContent = data.today_stats.face_swap;
+                document.getElementById('todayARPhotos').textContent = data.today_stats.ar_photos;
+                document.getElementById('todayRevenue').textContent = this.formatCurrency(data.today_stats.revenue);
+                document.getElementById('activeToday').textContent = data.today_stats.transactions;
+            }
+
+            async loadUsersData() {
+                try {
+                    // Add timeout untuk users data juga
+                    const controller = new AbortController();
+                    const timeoutId = setTimeout(() => controller.abort(), 8000); // 8 second timeout
+                    
+                    const response = await fetch('/api/admin/users', {
+                        headers: {'Authorization': `Bearer ${this.token}`},
+                        signal: controller.signal
+                    });
+
+                    clearTimeout(timeoutId);
+
+                    if (!response.ok) {
+                        throw new Error(`HTTP ${response.status}: Failed to load users`);
+                    }
+                    
+                    const data = await response.json();
+
+                    if (data.success) {
+                        this.renderUsersTable(data.users);
+                    } else {
+                        throw new Error(data.message || 'Invalid users response');
+                    }
+                } catch (error) {
+                    console.error('Users data error:', error);
+                    if (error.name === 'AbortError') {
+                        this.showError('Users request timeout');
+                    } else {
+                        this.showError(`Failed to load users: ${error.message}`);
+                    }
+                    
+                    // Fallback demo users
+                    this.renderDemoUsers();
+                }
+            }
+
+            renderDemoUsers() {
+                const demoUsers = [
+                    {
+                        id: 1, username: 'cbt', role: 'user', credit_balance: 2,
+                        total_photos: 15, face_swap_count: 10, ar_photo_count: 5,
+                        total_spent: 25000, last_photo: '2025-01-15T10:30:00'
+                    },
+                    {
+                        id: 2, username: 'bsd', role: 'user', credit_balance: 0,
+                        total_photos: 8, face_swap_count: 5, ar_photo_count: 3,
+                        total_spent: 15000, last_photo: '2025-01-14T15:20:00'
+                    },
+                    {
+                        id: 3, username: 'slo', role: 'user', credit_balance: 1,
+                        total_photos: 12, face_swap_count: 7, ar_photo_count: 5,
+                        total_spent: 20000, last_photo: '2025-01-15T09:45:00'
+                    }
+                ];
+                this.renderUsersTable(demoUsers);
+            }
+
+            renderUsersTable(users) {
+                const container = document.getElementById('usersTableContainer');
+                
+                if (users.length === 0) {
+                    container.innerHTML = '<div class="loading">No users found</div>';
+                    return;
+                }
+
+                const tableHTML = `
+                    <table class="users-table">
+                        <thead>
+                            <tr>
+                                <th>Username</th>
+                                <th>Role</th>
+                                <th>Credits</th>
+                                <th>Photos</th>
+                                <th>Revenue</th>
+                                <th>Last Activity</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${users.map(user => `
+                                <tr>
+                                    <td>
+                                        <strong>${user.username}</strong>
+                                        <div style="font-size: 0.8rem; color: #7f8c8d;">ID: ${user.id}</div>
+                                    </td>
+                                    <td>
+                                        <span class="badge role-${user.role}">${user.role}</span>
+                                    </td>
+                                    <td>
+                                        <span class="badge ${user.credit_balance > 0 ? 'credits-positive' : 'credits-zero'}">
+                                            ${user.credit_balance}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <div>${user.total_photos} total</div>
+                                        <div style="font-size: 0.8rem; color: #7f8c8d;">
+                                            FS: ${user.face_swap_count} | AR: ${user.ar_photo_count}
+                                        </div>
+                                    </td>
+                                    <td>${this.formatCurrency(user.total_spent)}</td>
+                                    <td>
+                                        ${user.last_photo ? new Date(user.last_photo).toLocaleDateString() : 'Never'}
+                                    </td>
+                                    <td>
+                                        <button onclick="adminDashboard.resetCredits(${user.id})" style="
+                                            background: #3498db; 
+                                            color: white; 
+                                            border: none; 
+                                            padding: 4px 8px; 
+                                            border-radius: 4px; 
+                                            cursor: pointer;
+                                            font-size: 0.8rem;
+                                        ">
+                                            Reset Credits
+                                        </button>
+                                    </td>
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                    </table>
+                `;
+
+                container.innerHTML = tableHTML;
+            }
+
+            async resetCredits(userId) {
+                const credits = prompt('Enter new credit amount:', '3');
+                if (credits === null) return;
+
+                const creditAmount = parseInt(credits);
+                if (isNaN(creditAmount) || creditAmount < 0) {
+                    alert('Please enter a valid credit amount');
+                    return;
+                }
+
+                try {
+                    const response = await fetch(`/api/admin/users/${userId}/reset-credits`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${this.token}`
+                        },
+                        body: JSON.stringify({ credits: creditAmount })
+                    });
+
+                    const data = await response.json();
+
+                    if (data.success) {
+                        alert(`Credits reset to ${creditAmount} successfully`);
+                        await this.loadUsersData(); // Refresh users table
+                    } else {
+                        alert('Failed to reset credits');
+                    }
+                } catch (error) {
+                    console.error('Reset credits error:', error);
+                    alert('Failed to reset credits');
+                }
+            }
+
+            initCharts() {
+                // Delay chart creation untuk menghindari blocking
+                setTimeout(() => {
+                    this.createRevenueChart();
+                }, 100);
+                
+                setTimeout(() => {
+                    this.createPhotoDistributionChart();
+                }, 200);
+            }
+
+            createRevenueChart() {
+                try {
+                    const ctx = document.getElementById('revenueChart').getContext('2d');
+                    
+                    // Destroy existing chart jika ada
+                    if (this.charts.revenue) {
+                        this.charts.revenue.destroy();
+                    }
+                    
+                    // Data yang lebih realistis dan ringan
+                    const last7Days = [];
+                    const revenueData = [];
+                    
+                    for (let i = 6; i >= 0; i--) {
+                        const date = new Date();
+                        date.setDate(date.getDate() - i);
+                        last7Days.push(date.toLocaleDateString('id-ID', { 
+                            month: 'short', 
+                            day: 'numeric' 
+                        }));
+                        
+                        // Generate realistic revenue data
+                        revenueData.push(Math.floor(Math.random() * 50000) + 20000);
+                    }
+
+                    this.charts.revenue = new Chart(ctx, {
+                        type: 'line',
+                        data: {
+                            labels: last7Days,
+                            datasets: [{
+                                label: 'Daily Revenue (Rp)',
+                                data: revenueData,
+                                borderColor: '#667eea',
+                                backgroundColor: 'rgba(102, 126, 234, 0.1)',
+                                tension: 0.4,
+                                fill: true,
+                                pointRadius: 4,
+                                pointHoverRadius: 6
+                            }]
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            interaction: {
+                                intersect: false,
+                                mode: 'index'
+                            },
+                            plugins: {
+                                legend: { 
+                                    display: false 
+                                },
+                                tooltip: {
+                                    callbacks: {
+                                        label: function(context) {
+                                            return 'Revenue: Rp ' + context.parsed.y.toLocaleString();
+                                        }
+                                    }
+                                }
+                            },
+                            scales: {
+                                y: {
+                                    beginAtZero: true,
+                                    ticks: {
+                                        callback: function(value) {
+                                            return 'Rp ' + (value/1000) + 'K';
+                                        }
+                                    }
+                                },
+                                x: {
+                                    grid: {
+                                        display: false
+                                    }
+                                }
+                            },
+                            // Performance optimizations
+                            animation: {
+                                duration: 1000
+                            },
+                            elements: {
+                                point: {
+                                    hoverRadius: 8
+                                }
+                            }
+                        }
+                    });
+                } catch (error) {
+                    console.error('Revenue chart error:', error);
+                    this.showChartError('revenueChart', 'Revenue Chart');
+                }
+            }
+
+            createPhotoDistributionChart() {
+                try {
+                    const ctx = document.getElementById('photoDistChart').getContext('2d');
+                    
+                    // Destroy existing chart jika ada
+                    if (this.charts.photoDistribution) {
+                        this.charts.photoDistribution.destroy();
+                    }
+                    
+                    // Data berdasarkan stats yang sudah ada
+                    const faceSwapCount = parseInt(document.getElementById('totalFaceSwap').textContent) || 156;
+                    const arPhotoCount = parseInt(document.getElementById('totalARPhotos').textContent) || 89;
+                    
+                    this.charts.photoDistribution = new Chart(ctx, {
+                        type: 'doughnut',
+                        data: {
+                            labels: ['Face Swap', 'AR Photos'],
+                            datasets: [{
+                                data: [faceSwapCount, arPhotoCount],
+                                backgroundColor: ['#e74c3c', '#f39c12'],
+                                borderWidth: 2,
+                                borderColor: '#fff'
+                            }]
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            plugins: {
+                                legend: {
+                                    position: 'bottom',
+                                    labels: {
+                                        padding: 20,
+                                        usePointStyle: true
+                                    }
+                                },
+                                tooltip: {
+                                    callbacks: {
+                                        label: function(context) {
+                                            const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                                            const percentage = ((context.parsed / total) * 100).toFixed(1);
+                                            return context.label + ': ' + context.parsed + ' (' + percentage + '%)';
+                                        }
+                                    }
+                                }
+                            },
+                            // Performance optimizations
+                            animation: {
+                                duration: 800
+                            }
+                        }
+                    });
+                } catch (error) {
+                    console.error('Photo distribution chart error:', error);
+                    this.showChartError('photoDistChart', 'Photo Distribution');
+                }
+            }
+
+            showChartError(canvasId, chartName) {
+                const canvas = document.getElementById(canvasId);
+                const container = canvas.parentElement;
+                container.innerHTML = `
+                    <h3><i class="fas fa-chart-line"></i> ${chartName}</h3>
+                    <div style="
+                        display: flex;
+                        align-items: center;
+                        justify-content: center;
+                        height: 200px;
+                        color: #7f8c8d;
+                        flex-direction: column;
+                    ">
+                        <i class="fas fa-exclamation-triangle" style="font-size: 2rem; margin-bottom: 10px;"></i>
+                        <p>Chart failed to load</p>
+                        <button onclick="location.reload()" style="
+                            margin-top: 10px;
+                            padding: 5px 15px;
+                            background: #3498db;
+                            color: white;
+                            border: none;
+                            border-radius: 5px;
+                            cursor: pointer;
+                        ">Retry</button>
+                    </div>
+                `;
+            }
+
+            setupAutoRefresh() {
+                // Refresh data every 30 seconds, but with smart throttling
+                this.refreshInterval = setInterval(() => {
+                    // Only refresh if page is visible
+                    if (!document.hidden) {
+                        this.loadDashboardData();
+                        this.updateRefreshTime();
+                    }
+                }, 30000);
+
+                // Handle page visibility changes
+                document.addEventListener('visibilitychange', () => {
+                    if (!document.hidden && this.refreshInterval) {
+                        // Refresh immediately when page becomes visible
+                        this.loadDashboardData();
+                    }
+                });
+            }
+
+            showRefreshIndicator() {
+                const indicator = document.getElementById('refreshIndicator');
+                indicator.style.display = 'block';
+                indicator.innerHTML = '<i class="fas fa-sync-alt fa-spin"></i> Refreshing data...';
+            }
+
+            hideRefreshIndicator() {
+                setTimeout(() => {
+                    const indicator = document.getElementById('refreshIndicator');
+                    indicator.style.display = 'none';
+                }, 800);
+            }
+
+            updateRefreshTime() {
+                const now = new Date();
+                const timeStr = now.toLocaleTimeString('id-ID', { 
+                    hour: '2-digit', 
+                    minute: '2-digit', 
+                    second: '2-digit' 
+                });
+                document.getElementById('lastRefresh').textContent = timeStr;
+            }
+
+            formatCurrency(amount) {
+                return new Intl.NumberFormat('id-ID', {
+                    style: 'currency',
+                    currency: 'IDR',
+                    minimumFractionDigits: 0,
+                    maximumFractionDigits: 0
+                }).format(amount);
+            }
+
+            showError(message) {
+                console.error(message);
+                
+                // Show toast notification
+                const toast = document.createElement('div');
+                toast.style.cssText = `
+                    position: fixed;
+                    top: 80px;
+                    right: 20px;
+                    background: #e74c3c;
+                    color: white;
+                    padding: 12px 20px;
+                    border-radius: 8px;
+                    z-index: 1001;
+                    max-width: 300px;
+                    font-size: 0.9rem;
+                    box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+                `;
+                toast.innerHTML = `<i class="fas fa-exclamation-triangle"></i> ${message}`;
+                
+                document.body.appendChild(toast);
+                
+                setTimeout(() => {
+                    toast.style.opacity = '0';
+                    toast.style.transform = 'translateX(400px)';
+                    setTimeout(() => {
+                        if (toast.parentNode) {
+                            toast.parentNode.removeChild(toast);
+                        }
+                    }, 300);
+                }, 4000);
+            }
+
+            // Cleanup method untuk prevent memory leaks
+            cleanup() {
+                if (this.refreshInterval) {
+                    clearInterval(this.refreshInterval);
+                }
+                
+                // Destroy charts
+                Object.values(this.charts).forEach(chart => {
+                    if (chart && typeof chart.destroy === 'function') {
+                        chart.destroy();
+                    }
+                });
+            }
+        }
+
+        // Global functions
+        async function logout() {
+            try {
+                const token = localStorage.getItem('token');
+
+                if (token) {
+                    await fetch('/api/logout', {
+                        method: 'POST',
+                        headers: {'Authorization': `Bearer ${token}`}
+                    });
+                }
+
+                localStorage.removeItem('token');
+                localStorage.removeItem('user');
+                
+                alert('Logout successful!');
+                window.location.href = '/login';
+            } catch (error) {
+                console.error('Logout error:', error);
+                localStorage.removeItem('token');
+                localStorage.removeItem('user');
+                window.location.href = '/login';
+            }
+        }
+
+        function refreshUsers() {
+            if (window.adminDashboard) {
+                window.adminDashboard.loadUsersData();
+            }
+        }
+
+        // Navigation handling
+        document.addEventListener('DOMContentLoaded', function() {
+            // Initialize dashboard
+            window.adminDashboard = new AdminDashboard();
+
+            // Handle navigation clicks
+            document.querySelectorAll('.nav-item').forEach(item => {
+                item.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    
+                    // Remove active class from all items
+                    document.querySelectorAll('.nav-item').forEach(nav => nav.classList.remove('active'));
+                    
+                    // Add active class to clicked item
+                    this.classList.add('active');
+                    
+                    // Handle navigation (implement page switching here)
+                    const page = this.dataset.page;
+                    
+                    switch(page) {
+                        case 'users':
+                            alert('User Management page - Coming soon!');
+                            break;
+                        case 'settings':
+                            alert('Settings page - Coming soon!');
+                            break;
+                        case 'reports':
+                            alert('Reports page - Coming soon!');
+                            break;
+                        default:
+                            // Dashboard is already loaded
+                            break;
+                    }
+                });
+            });
+        });
+
+        // Keyboard shortcuts
+        document.addEventListener('keydown', function(e) {
+            if (e.ctrlKey) {
+                switch(e.key) {
+                    case 'r':
+                        e.preventDefault();
+                        if (window.adminDashboard) {
+                            window.adminDashboard.loadDashboardData();
+                        }
+                        break;
+                    case 'u':
+                        e.preventDefault();
+                        refreshUsers();
+                        break;
+                }
+            }
+        });
+    </script>
+</body>
+</html>

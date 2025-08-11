@@ -122,21 +122,15 @@
         }
 
         .btn-primary {
-            background-color: #ff4c60;
-            color: white;
+            background: linear-gradient(45deg, #00ffcc, #0099ff);
+            color: #0a1f44;
             cursor: pointer;
             transition: transform 0.2s ease;
         }
 
         .btn-primary:hover {
             transform: translateY(-3px);
-            box-shadow: 0 10px 25px rgba(255, 76, 96, 0.4);
-        }
-
-        .btn-primary:disabled {
-            opacity: 0.6;
-            cursor: not-allowed;
-            transform: none;
+            box-shadow: 0 10px 25px rgba(0, 255, 204, 0.4);
         }
 
         .btn-secondary {
@@ -156,7 +150,6 @@
             margin-bottom: 20px;
             display: none;
             text-align: center;
-            animation: slideDown 0.3s ease;
         }
 
         .alert.error {
@@ -171,16 +164,9 @@
             color: #51cf66;
         }
 
-        .alert.info {
-            background: rgba(74, 144, 226, 0.2);
-            border: 1px solid rgba(74, 144, 226, 0.5);
-            color: #4a90e2;
-        }
-
         .loading {
             display: none;
             margin: 10px 0;
-            text-align: center;
         }
 
         .spinner {
@@ -193,68 +179,6 @@
             margin: 0 auto;
         }
 
-        .demo-accounts {
-            margin-top: 30px;
-            padding: 20px;
-            background: rgba(255, 255, 255, 0.05);
-            border-radius: 15px;
-            border: 1px solid rgba(255, 255, 255, 0.1);
-        }
-
-        .demo-accounts h3 {
-            font-size: 1rem;
-            margin-bottom: 15px;
-            color: #00ffcc;
-        }
-
-        .demo-account {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 8px 0;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-        }
-
-        .demo-account:last-child {
-            border-bottom: none;
-        }
-
-        .demo-info {
-            text-align: left;
-        }
-
-        .demo-username {
-            font-weight: 600;
-            color: #fff;
-        }
-
-        .demo-role {
-            font-size: 0.8rem;
-            color: rgba(255, 255, 255, 0.7);
-        }
-
-        .demo-password {
-            font-size: 0.9rem;
-            color: #00ffcc;
-            font-family: monospace;
-        }
-
-        .quick-login {
-            background: rgba(0, 255, 204, 0.1);
-            border: 1px solid rgba(0, 255, 204, 0.3);
-            color: #00ffcc;
-            padding: 5px 10px;
-            border-radius: 8px;
-            font-size: 0.8rem;
-            cursor: pointer;
-            transition: all 0.3s ease;
-        }
-
-        .quick-login:hover {
-            background: rgba(0, 255, 204, 0.2);
-            transform: scale(1.05);
-        }
-
         @keyframes spin {
             0% { transform: rotate(0deg); }
             100% { transform: rotate(360deg); }
@@ -265,32 +189,34 @@
             to { opacity: 1; transform: translateY(0); }
         }
 
-        @keyframes slideDown {
-            from { opacity: 0; transform: translateY(-10px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-
         .page {
             animation: fadeIn 0.6s ease-out;
         }
 
-        .role-indicator {
-            display: inline-block;
-            padding: 2px 8px;
-            border-radius: 12px;
-            font-size: 0.7rem;
-            font-weight: 600;
-            text-transform: uppercase;
+        .demo-accounts {
+            margin-top: 20px;
+            padding: 15px;
+            background: rgba(0, 255, 204, 0.1);
+            border-radius: 10px;
+            border: 1px solid rgba(0, 255, 204, 0.3);
+            font-size: 0.9rem;
         }
 
-        .role-admin {
-            background: rgba(255, 107, 107, 0.3);
-            color: #ff6b6b;
+        .demo-accounts h4 {
+            margin-bottom: 10px;
+            color: #00ffcc;
         }
 
-        .role-user {
-            background: rgba(74, 144, 226, 0.3);
-            color: #4a90e2;
+        .demo-accounts .account {
+            margin: 5px 0;
+            cursor: pointer;
+            padding: 5px;
+            border-radius: 5px;
+            transition: background 0.3s ease;
+        }
+
+        .demo-accounts .account:hover {
+            background: rgba(0, 255, 204, 0.1);
         }
 
         @media (max-width: 480px) {
@@ -305,10 +231,6 @@
             form {
                 padding: 30px 20px;
             }
-
-            .demo-accounts {
-                padding: 15px;
-            }
         }
     </style>
 </head>
@@ -321,102 +243,58 @@
             <h2>LOGIN</h2>
             
             <div class="alert error" id="loginError"></div>
-            <div class="alert success" id="loginSuccess"></div>
-            <div class="alert info" id="loginInfo"></div>
-            
             <div class="loading" id="loginLoading">
                 <div class="spinner"></div>
-                <p>Authenticating...</p>
             </div>
             
             <div class="input-group">
                 <label for="username">Username</label>
-                <input type="text" id="username" placeholder="Masukkan username" required autocomplete="username">
+                <input type="text" id="username" placeholder="Masukkan username" required>
             </div>
             
             <div class="input-group">
                 <label for="password">Password</label>
-                <input type="password" id="password" placeholder="Masukkan password" required autocomplete="current-password">
+                <input type="password" id="password" placeholder="Masukkan password" required>
             </div>
             
-            <button type="submit" class="btn btn-primary" id="loginBtn">
+            <button type="submit" class="btn btn-primary">
                 <i class="fas fa-sign-in-alt"></i> Login
             </button>
+
+            <!-- Demo Accounts untuk Testing -->
+            <div class="demo-accounts">
+                <h4><i class="fas fa-key"></i> Demo Accounts</h4>
+                <div class="account" onclick="fillLogin('admin', 'admin123')">
+                    👨‍💼 <strong>Admin:</strong> admin / admin123
+                </div>
+                <div class="account" onclick="fillLogin('cbt', 'demo123')">
+                    👤 <strong>User:</strong> cbt / demo123
+                </div>
+            </div>
         </form>
-
-        <!-- Demo Accounts Section -->
-        <div class="demo-accounts">
-            <h3><i class="fas fa-users"></i> Demo Accounts</h3>
-            
-            <div class="demo-account">
-                <div class="demo-info">
-                    <div class="demo-username">admin <span class="role-indicator role-admin">Admin</span></div>
-                    <div class="demo-role">Full access to dashboard & management</div>
-                </div>
-                <div>
-                    <div class="demo-password">admin123</div>
-                    <button type="button" class="quick-login" onclick="quickLogin('admin', 'admin123')">
-                        Quick Login
-                    </button>
-                </div>
-            </div>
-
-            <div class="demo-account">
-                <div class="demo-info">
-                    <div class="demo-username">cbt <span class="role-indicator role-user">User</span></div>
-                    <div class="demo-role">Photo generation access</div>
-                </div>
-                <div>
-                    <div class="demo-password">cbt123</div>
-                    <button type="button" class="quick-login" onclick="quickLogin('cbt', 'cbt123')">
-                        Quick Login
-                    </button>
-                </div>
-            </div>
-
-            <div class="demo-account">
-                <div class="demo-info">
-                    <div class="demo-username">bsd <span class="role-indicator role-user">User</span></div>
-                    <div class="demo-role">Photo generation access</div>
-                </div>
-                <div>
-                    <div class="demo-password">bsd123</div>
-                    <button type="button" class="quick-login" onclick="quickLogin('bsd', 'bsd123')">
-                        Quick Login
-                    </button>
-                </div>
-            </div>
-        </div>
     </div>
 
     <script>
+        // Auto-fill login credentials
+        function fillLogin(username, password) {
+            document.getElementById('username').value = username;
+            document.getElementById('password').value = password;
+        }
+
         // Enhanced login form handling with role-based redirect
         document.getElementById('loginForm').addEventListener('submit', async function(e) {
             e.preventDefault();
             
-            const username = document.getElementById('username').value.trim();
+            const username = document.getElementById('username').value;
             const password = document.getElementById('password').value;
-            
-            if (!username || !password) {
-                showAlert('error', 'Username dan password harus diisi');
-                return;
-            }
-            
-            await performLogin(username, password);
-        });
-
-        async function performLogin(username, password) {
             const loading = document.getElementById('loginLoading');
-            const loginBtn = document.getElementById('loginBtn');
+            const errorAlert = document.getElementById('loginError');
             
-            // Show loading state
+            // Show loading
             loading.style.display = 'block';
-            loginBtn.disabled = true;
-            hideAllAlerts();
+            errorAlert.style.display = 'none';
             
             try {
-                showAlert('info', 'Authenticating...');
-                
                 const response = await fetch('/api/login', {
                     method: 'POST',
                     headers: {
@@ -428,163 +306,84 @@
                 const data = await response.json();
                 
                 if (data.success) {
-                    // Store authentication data
+                    // Store token and user data
                     localStorage.setItem('token', data.token);
                     localStorage.setItem('user', JSON.stringify(data.user));
                     
-                    // Show success message with role info
-                    const role = data.user.role;
-                    const credits = data.user.credit_balance;
-                    const roleText = role === 'admin' ? 'Administrator' : 'User';
+                    // Show success message
+                    showSuccess(`Welcome ${data.user.role === 'admin' ? 'Admin' : 'User'} ${data.user.username}!`);
                     
-                    showAlert('success', `Login berhasil sebagai ${roleText}! Credits: ${credits}`);
-                    
-                    // Role-based redirect with delay for user feedback
+                    // Role-based redirect menggunakan data dari server
                     setTimeout(() => {
-                        const redirectUrl = data.redirect_url || (role === 'admin' ? '/dashboard_admin' : '/dashboard');
-                        
-                        console.log(`Redirecting ${username} (${role}) to ${redirectUrl}`);
-                        window.location.replace(redirectUrl);
-                    }, 1500);
-                    
+                        window.location.replace(data.redirect_url);
+                    }, 1000);
                 } else {
-                    showAlert('error', data.detail || data.message || 'Login gagal');
+                    showError(data.detail || data.message || 'Login gagal');
                 }
-                
             } catch (error) {
+                showError('Koneksi gagal. Silakan coba lagi.');
                 console.error('Login error:', error);
-                showAlert('error', 'Koneksi gagal. Silakan coba lagi.');
             } finally {
                 loading.style.display = 'none';
-                loginBtn.disabled = false;
             }
-        }
+        });
 
-        // Quick login function for demo accounts
-        function quickLogin(username, password) {
-            document.getElementById('username').value = username;
-            document.getElementById('password').value = password;
+        function showError(message) {
+            const errorAlert = document.getElementById('loginError');
+            errorAlert.textContent = message;
+            errorAlert.className = 'alert error';
+            errorAlert.style.display = 'block';
             
-            // Add visual feedback
-            showAlert('info', `Quick login as ${username}...`);
-            
-            // Perform login after short delay
             setTimeout(() => {
-                performLogin(username, password);
-            }, 500);
+                errorAlert.style.display = 'none';
+            }, 5000);
         }
 
-        function showAlert(type, message) {
-            hideAllAlerts();
+        function showSuccess(message) {
+            const errorAlert = document.getElementById('loginError');
+            errorAlert.textContent = message;
+            errorAlert.className = 'alert success';
+            errorAlert.style.display = 'block';
             
-            const alertElement = document.getElementById(`login${type.charAt(0).toUpperCase() + type.slice(1)}`);
-            if (alertElement) {
-                alertElement.textContent = message;
-                alertElement.style.display = 'block';
-                
-                // Auto-hide non-error alerts
-                if (type !== 'error') {
-                    setTimeout(() => {
-                        alertElement.style.display = 'none';
-                    }, type === 'success' ? 3000 : 2000);
-                }
-            }
-        }
-
-        function hideAllAlerts() {
-            const alerts = ['loginError', 'loginSuccess', 'loginInfo'];
-            alerts.forEach(alertId => {
-                const element = document.getElementById(alertId);
-                if (element) {
-                    element.style.display = 'none';
-                }
-            });
+            setTimeout(() => {
+                errorAlert.style.display = 'none';
+            }, 3000);
         }
 
         // Check if already logged in
-        function checkExistingAuth() {
+        document.addEventListener('DOMContentLoaded', function() {
             const token = localStorage.getItem('token');
-            const userStr = localStorage.getItem('user');
+            const user = localStorage.getItem('user');
             
-            if (token && userStr) {
+            if (token && user) {
                 try {
-                    const user = JSON.parse(userStr);
-                    
-                    // Verify token is still valid by checking with server
-                    fetch('/api/me', {
-                        headers: {
-                            'Authorization': `Bearer ${token}`
-                        }
-                    })
-                    .then(response => {
-                        if (response.ok) {
-                            // Token is valid, redirect based on role
-                            const redirectUrl = user.role === 'admin' ? '/dashboard_admin' : '/dashboard';
-                            showAlert('info', 'Already logged in, redirecting...');
-                            
-                            setTimeout(() => {
-                                window.location.replace(redirectUrl);
-                            }, 1000);
-                        } else {
-                            // Token is invalid, clear storage
-                            localStorage.removeItem('token');
-                            localStorage.removeItem('user');
-                        }
-                    })
-                    .catch(error => {
-                        console.log('Auth check failed:', error);
-                        // Network error, don't redirect
-                    });
-                    
-                } catch (error) {
-                    // Invalid user data, clear storage
+                    const userData = JSON.parse(user);
+                    // Redirect berdasarkan role tersimpan
+                    const redirectUrl = userData.role === 'admin' ? '/dashboard_admin' : '/dashboard';
+                    showSuccess('Already logged in, redirecting...');
+                    setTimeout(() => {
+                        window.location.replace(redirectUrl);
+                    }, 1000);
+                } catch (e) {
+                    // Invalid stored data, clear and continue
                     localStorage.removeItem('token');
                     localStorage.removeItem('user');
                 }
             }
-        }
+        });
 
         // Enhanced keyboard shortcuts
         document.addEventListener('keydown', function(e) {
-            // Quick login shortcuts (Ctrl + number)
-            if (e.ctrlKey) {
-                switch(e.key) {
-                    case '1':
-                        e.preventDefault();
-                        quickLogin('admin', 'admin123');
-                        break;
-                    case '2':
-                        e.preventDefault();
-                        quickLogin('cbt', 'cbt123');
-                        break;
-                    case '3':
-                        e.preventDefault();
-                        quickLogin('bsd', 'bsd123');
-                        break;
-                }
+            // Ctrl+1 for admin login
+            if (e.ctrlKey && e.key === '1') {
+                e.preventDefault();
+                fillLogin('admin', 'admin123');
             }
-        });
-
-        // Initialize page
-        document.addEventListener('DOMContentLoaded', function() {
-            checkExistingAuth();
-            
-            // Focus on username field
-            document.getElementById('username').focus();
-            
-            // Show welcome message
-            setTimeout(() => {
-                showAlert('info', 'Selamat datang! Gunakan demo accounts atau login dengan akun Anda.');
-            }, 500);
-        });
-
-        // Handle network status
-        window.addEventListener('online', function() {
-            showAlert('success', 'Koneksi internet tersambung kembali');
-        });
-
-        window.addEventListener('offline', function() {
-            showAlert('error', 'Koneksi internet terputus');
+            // Ctrl+2 for user login
+            if (e.ctrlKey && e.key === '2') {
+                e.preventDefault();
+                fillLogin('cbt', 'demo123');
+            }
         });
     </script>
 </body>

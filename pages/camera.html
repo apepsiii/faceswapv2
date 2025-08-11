@@ -29,19 +29,45 @@
         .page {
             min-height: 100vh;
             display: flex;
-            justify-content: flex-start; /* Konten ngumpul di atas */
+            justify-content: flex-start;
             align-items: center;
             flex-direction: column;
             position: relative;
             max-width: 600px;
             margin: 0 auto;
-            padding-top: 10px; /* Biar nggak terlalu mepet atas */
+            padding-top: 10px;
         }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            width: 100%;
+            margin-bottom: 20px;
+        }
+
         .logo img {
-            width: 30%;
-            height: 30%;
+            width: 80px;
+            height: 80px;
             object-fit: cover;
+            cursor: pointer;
         }
+
+        .credit-display {
+            background: linear-gradient(45deg, #00ffcc, #0099ff);
+            color: #0a1f44;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-weight: bold;
+            box-shadow: 0 4px 15px rgba(0, 255, 204, 0.3);
+            font-size: 0.9rem;
+        }
+
+        .credit-display.low {
+            background: linear-gradient(45deg, #e74c3c, #c0392b);
+            color: white;
+        }
+
         h3 {
             margin-bottom: 10px;
             font-size: 2rem;
@@ -56,8 +82,42 @@
             font-weight: 300;
         }
 
-        .selected-character {
-            display: none !important;
+        .credit-warning {
+            background: rgba(231, 76, 60, 0.2);
+            border: 1px solid rgba(231, 76, 60, 0.5);
+            color: #e74c3c;
+            padding: 20px;
+            border-radius: 15px;
+            margin: 20px 0;
+            text-align: center;
+            display: none;
+        }
+
+        .credit-warning h4 {
+            margin-bottom: 15px;
+            font-size: 1.3rem;
+        }
+
+        .credit-warning p {
+            margin-bottom: 20px;
+            line-height: 1.5;
+        }
+
+        .payment-btn {
+            background: linear-gradient(45deg, #e74c3c, #c0392b);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 25px;
+            cursor: pointer;
+            font-weight: bold;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+        }
+
+        .payment-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(231, 76, 60, 0.4);
         }
 
         .camera-container {
@@ -100,7 +160,7 @@
             position: absolute;
             top: 0; left: 0;
             width: 100%; height: 100%;
-            background-color: transparent; /* Jangan bikin layar hitam */
+            background-color: transparent;
             display: flex;
             align-items: center;
             justify-content: center;
@@ -125,143 +185,6 @@
             display: none;
         }
 
-        .camera-controls {
-            position: absolute;
-            bottom: 20px;
-            left: 50%;
-            transform: translateX(-50%);
-            display: flex;
-            gap: 20px;
-            align-items: center;
-        }
-
-        .camera-btn {
-            width: 60px;
-            height: 60px;
-            border: none;
-            border-radius: 50%;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
-            display: none !important;
-        }
-
-        .camera-btn.switch {
-            background: rgba(255, 255, 255, 0.9);
-            color: #0a1f44;
-            font-size: 1.2rem;
-        }
-
-        .camera-btn.capture {
-            width: 70px;
-            height: 70px;
-            color: #0a1f44;
-            font-size: 1.5rem;
-            box-shadow: 0 8px 25px rgba(0, 255, 204, 0.4);
-        }
-
-        .camera-btn:hover {
-            transform: scale(1.1);
-        }
-
-        .camera-btn:active {
-            transform: scale(0.95);
-        }
-
-        .preview-container {
-            width: 100%;
-            max-width: 400px;
-            text-align: center;
-            display: none;
-        }
-
-        .preview-image {
-            width: 100%;
-            border-radius: 20px;
-            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.3);
-            margin-bottom: 20px;
-        }
-
-        .btn {
-            padding: 15px 30px;
-            border: none;
-            border-radius: 15px;
-            font-size: 16px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            margin: 0 10px 10px 10px;
-            display: inline-flex;
-            align-items: center;
-            gap: 8px;
-        }
-
-        .btn-primary {
-            background: linear-gradient(45deg, #00ffcc, #0099ff);
-            color: #0a1f44;
-            box-shadow: 0 8px 25px rgba(0, 255, 204, 0.3);
-        }
-
-        .btn-primary:hover {
-            transform: translateY(-3px);
-            box-shadow: 0 15px 35px rgba(0, 255, 204, 0.4);
-        }
-
-        .btn-secondary {
-            background: rgba(255, 255, 255, 0.1);
-            color: #fff;
-            border: 2px solid rgba(255, 255, 255, 0.3);
-            backdrop-filter: blur(10px);
-        }
-
-        .btn-secondary:hover {
-            background: rgba(255, 255, 255, 0.2);
-            transform: translateY(-2px);
-        }
-
-        .back-button {
-            position: absolute;
-            top: 20px;
-            left: 20px;
-            background: linear-gradient(45deg, #00ffcc, #0099ff);
-            color: #0a1f44;
-            padding: 12px 20px;
-            border: none;
-            border-radius: 15px;
-            font-weight: 600;
-            cursor: pointer;
-            text-decoration: none;
-            transition: all 0.3s ease;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            box-shadow: 0 4px 15px rgba(0, 255, 204, 0.3);
-        }
-
-        
-        .alert {
-            padding: 15px;
-            border-radius: 10px;
-            margin-bottom: 20px;
-            display: none;
-            max-width: 400px;
-            margin-left: auto;
-            margin-right: auto;
-        }
-
-        .alert.error {
-            background: rgba(255, 107, 107, 0.2);
-            border: 1px solid rgba(255, 107, 107, 0.5);
-            color: #ff6b6b;
-        }
-
-        .loading {
-            display: none;
-            margin: 20px 0;
-        }
         .ready-overlay {
             position: absolute;
             top: 0; left: 0;
@@ -279,14 +202,34 @@
         .ready-overlay.hidden {
             display: none;
         }
+
+        .loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(10, 31, 68, 0.9);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-direction: column;
+            z-index: 1000;
+            color: white;
+        }
+
+        .loading-overlay.hidden {
+            display: none;
+        }
+
         .spinner {
-            width: 30px;
-            height: 30px;
-            border: 3px solid rgba(255, 255, 255, 0.3);
-            border-top: 3px solid #00ffcc;
+            width: 50px;
+            height: 50px;
+            border: 4px solid rgba(255, 255, 255, 0.3);
+            border-top: 4px solid #00ffcc;
             border-radius: 50%;
             animation: spin 1s linear infinite;
-            margin: 0 auto 10px;
+            margin-bottom: 20px;
         }
 
         @keyframes spin {
@@ -294,17 +237,17 @@
             100% { transform: rotate(360deg); }
         }
 
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(20px); }
-            to { opacity: 1; transform: translateY(0); }
+        .loading-text {
+            font-size: 1.2rem;
+            margin-bottom: 10px;
         }
 
-        .page {
-            animation: fadeIn 0.6s ease-out;
+        .loading-subtext {
+            font-size: 0.9rem;
+            opacity: 0.8;
         }
 
         @media (max-width: 768px) {
-
             body {
                 padding: 0;
             }
@@ -331,377 +274,471 @@
                 font-size: 1.5rem;
                 margin-top: 10px;
             }
+
+            .header {
+                flex-direction: column;
+                gap: 10px;
+                margin-bottom: 15px;
+            }
+
+            .logo img {
+                width: 60px;
+                height: 60px;
+            }
         }
     </style>
 </head>
 <body>
+    <!-- Loading Overlay -->
+    <div class="loading-overlay" id="loadingOverlay">
+        <div class="spinner"></div>
+        <div class="loading-text">Checking Credits...</div>
+        <div class="loading-subtext">Please wait while we verify your account</div>
+    </div>
+
     <div class="page">
-        <form class="logout-form">
+        <div class="header">
             <div class="logo">
-                <img src="/static/images/logo.png" height="50px" onclick="logout()">
+                <img src="/static/images/logo.png" alt="Logo" onclick="logout()">
             </div>
-        </form>
-        
-        <h3>EKSPRESIKAN GAYA MU</h3>
-        <div class="selected-character" id="selectedCharacter">
-            <span id="characterName"></span>
+            <div class="credit-display" id="creditDisplay">
+                <i class="fas fa-coins"></i> Credits: <span id="creditCount">-</span>
+            </div>
         </div>
         
-        <div class="alert error" id="cameraError"></div>
-        <div class="loading" id="cameraLoading">
-            <div class="spinner"></div>
-            <p>Mengakses kamera...</p>
+        <h3>EKSPRESIKAN GAYA MU</h3>
+        <div class="subtitle">Siap untuk mengambil foto dengan karakter pilihan Anda</div>
+
+        <!-- Credit Warning -->
+        <div class="credit-warning" id="creditWarning">
+            <h4><i class="fas fa-exclamation-triangle"></i> Credits Habis!</h4>
+            <p>Anda tidak memiliki credits untuk mengambil foto. Silakan lakukan pembayaran terlebih dahulu untuk melanjutkan.</p>
+            <button class="payment-btn" onclick="goToPayment()">
+                <i class="fas fa-credit-card"></i> Bayar Sekarang - Rp 5.000
+            </button>
         </div>
         
         <div class="camera-container" id="cameraContainer">
             <video id="video" autoplay muted playsinline></video>
             <canvas id="canvas"></canvas>
             <div class="camera-overlay"></div>
-            <div class="face-guide"></div>
             
-            <!-- Countdown Overlay -->
-             <div class="ready-overlay hidden" id="readyOverlay">
+            <!-- Ready Overlay -->
+            <div class="ready-overlay hidden" id="readyOverlay">
                 <div class="ready-text">Ready...</div>
             </div>
+            
+            <!-- Countdown Overlay -->
             <div class="countdown-overlay hidden" id="countdownOverlay">
                 <div class="countdown-number" id="countdownNumber">5</div>
             </div>
-            <audio id="cekrekSound" src="/static/images/cekrek.mp3" preload="auto"></audio>
-            <div class="camera-controls">
-                <button class="camera-btn switch" id="switchCamera" title="Ganti Kamera">
-                    
-                </button>
-                <button class="camera-btn capture" id="readyBtn" title="Siap Foto">
-                    
-                </button>
-            </div>
-        </div>
-        
-        <div class="preview-container" id="previewContainer">
-            <img id="previewImage" class="preview-image" alt="Preview">
             
-            <div>
-                <button class="btn btn-primary" id="generateBtn">
-                    <i class="fas fa-magic"></i> Generate Ulang
-                </button>
-                <button class="btn btn-secondary" id="retakeBtn">
-                    <i class="fas fa-redo"></i> Foto Ulang
-                </button>
-            </div>
+            <audio id="cekrekSound" src="/static/images/cekrek.mp3" preload="auto"></audio>
         </div>
     </div>
 
     <script>
-        let videoStream = null;
-        let currentCamera = 'user'; // 'user' for front, 'environment' for back
-        let capturedImage = null;
-        let selectedCharacter = null;
-        let countdownTimer = null;
-        let isCountingDown = false;
-        
-        // Check authentication and character selection
-        const token = localStorage.getItem('token');
-        const characterData = localStorage.getItem('selectedCharacter');
-        
-        if (!token) {
-            window.location.replace('/login');
-        }
-        
-        if (!characterData) {
-            window.location.replace('/character');
-        }
-        
-        selectedCharacter = JSON.parse(characterData);
-        
-        // Display selected character
-        document.getElementById('characterName').textContent = selectedCharacter.displayName;
-
-        // Initialize camera on page load
-        document.addEventListener('DOMContentLoaded', function() {
-            initializeCamera();
-        });
-
-       async function initializeCamera() {
-        const loading = document.getElementById('cameraLoading');
-        const errorAlert = document.getElementById('cameraError');
-        const video = document.getElementById('video');
-
-        loading.style.display = 'block';
-        errorAlert.style.display = 'none';
-
-        try {
-            // Request camera permission
-            videoStream = await navigator.mediaDevices.getUserMedia({
-            video: true
-        });
-
-            video.srcObject = videoStream;
-
-            video.onloadedmetadata = () => {
-            loading.style.display = 'none';
-
-                // Tampilkan ready text 5 detik dulu, lalu mulai countdown
-            showReadyThenCountdown();
-            };
-
-        } catch (error) {
-            loading.style.display = 'none';
-            showError('Tidak dapat mengakses kamera. Pastikan browser memiliki izin kamera.');
-            console.error('Camera error:', error);
-        }
-    }
-        // Switch camera
-        document.getElementById('switchCamera').addEventListener('click', async function() {
-            if (videoStream) {
-                videoStream.getTracks().forEach(track => track.stop());
-            }
-            
-            currentCamera = currentCamera === 'user' ? 'environment' : 'user';
-            await initializeCamera();
-        });
-
-        // Ready button (starts countdown)
-        document.getElementById('readyBtn').addEventListener('click', function() {
-            if (isCountingDown) return;
-            
-            startCountdown();
-        });
-function showReadyThenCountdown() {
-    console.log("showReadyThenCountdown DIPANGGIL");
-
-    const readyOverlay = document.getElementById('readyOverlay');
-    readyOverlay.classList.remove('hidden');
-
-    // Lampu nyala tepat saat tulisan "READY" muncul
-    fetch('/relay?state=on')
-    .then(() => console.log("Lampu MATI"))
-    .catch(() => console.log("Gagal matikan lampu"));
-
-    setTimeout(() => {
-        readyOverlay.classList.add('hidden');
-        startCountdown();
-    }, 3000); 
-}
-   
-     function startCountdown() {
-        const countdownOverlay = document.getElementById("countdownOverlay");
-        const countdownNumber = document.getElementById("countdownNumber");
-        const cekrekSound = document.getElementById("cekrekSound");
-
-        countdownOverlay.classList.remove("hidden");
-
-        let count = 5;
-        countdownNumber.textContent = count;
-
-        const timer = setInterval(() => {
-            count--;
-
-            if (count === 4) {
-                cekrekSound.play();
+        class CameraManager {
+            constructor() {
+                this.videoStream = null;
+                this.currentUser = null;
+                this.selectedCharacter = null;
+                this.capturedImage = null;
+                this.countdownTimer = null;
+                this.isCountingDown = false;
+                this.token = localStorage.getItem('token');
+                
+                this.init();
             }
 
-            if (count >= 0) {
+            async init() {
+                try {
+                    // Show loading
+                    this.showLoading('Checking Credits...');
+
+                    // Check authentication
+                    if (!this.checkAuth()) return;
+
+                    // Load user data and check credits
+                    await this.loadUserData();
+                    
+                    // Check if credits sufficient
+                    if (!this.checkCredits()) return;
+
+                    // Load selected character
+                    if (!this.loadSelectedCharacter()) return;
+
+                    // Initialize camera
+                    await this.initializeCamera();
+
+                    this.hideLoading();
+                } catch (error) {
+                    console.error('Camera initialization error:', error);
+                    this.showError('Gagal menginisialisasi kamera');
+                }
+            }
+
+            checkAuth() {
+                if (!this.token) {
+                    this.showError('Silakan login terlebih dahulu');
+                    setTimeout(() => {
+                        window.location.replace('/login');
+                    }, 2000);
+                    return false;
+                }
+                return true;
+            }
+
+            async loadUserData() {
+                try {
+                    this.showLoading('Loading user data...');
+                    
+                    const response = await fetch('/api/me', {
+                        headers: {'Authorization': `Bearer ${this.token}`}
+                    });
+
+                    if (!response.ok) {
+                        throw new Error('Failed to load user data');
+                    }
+
+                    const data = await response.json();
+                    if (data.success) {
+                        this.currentUser = data.user;
+                        this.updateCreditDisplay();
+                        
+                        // Update localStorage dengan data terbaru
+                        localStorage.setItem('user', JSON.stringify(this.currentUser));
+                    } else {
+                        throw new Error('Invalid user data');
+                    }
+                } catch (error) {
+                    console.error('Error loading user data:', error);
+                    this.showError('Gagal memuat data user');
+                    setTimeout(() => {
+                        window.location.replace('/login');
+                    }, 2000);
+                }
+            }
+
+            checkCredits() {
+                if (!this.currentUser || this.currentUser.credit_balance < 1) {
+                    this.showCreditWarning();
+                    return false;
+                }
+                return true;
+            }
+
+            loadSelectedCharacter() {
+                const characterData = localStorage.getItem('selectedCharacter');
+                
+                if (!characterData) {
+                    this.showError('Karakter belum dipilih');
+                    setTimeout(() => {
+                        window.location.replace('/character');
+                    }, 2000);
+                    return false;
+                }
+                
+                try {
+                    this.selectedCharacter = JSON.parse(characterData);
+                    return true;
+                } catch (error) {
+                    this.showError('Data karakter tidak valid');
+                    setTimeout(() => {
+                        window.location.replace('/character');
+                    }, 2000);
+                    return false;
+                }
+            }
+
+            updateCreditDisplay() {
+                const creditCount = document.getElementById('creditCount');
+                const creditDisplay = document.getElementById('creditDisplay');
+                
+                if (this.currentUser) {
+                    creditCount.textContent = this.currentUser.credit_balance;
+                    
+                    if (this.currentUser.credit_balance <= 0) {
+                        creditDisplay.classList.add('low');
+                    } else {
+                        creditDisplay.classList.remove('low');
+                    }
+                }
+            }
+
+            showCreditWarning() {
+                this.hideLoading();
+                document.getElementById('creditWarning').style.display = 'block';
+                document.getElementById('cameraContainer').style.display = 'none';
+                
+                // Auto redirect ke character selection setelah 5 detik
+                setTimeout(() => {
+                    this.showLoading('Redirecting to character selection...');
+                    setTimeout(() => {
+                        window.location.replace('/character');
+                    }, 1000);
+                }, 5000);
+            }
+
+            async initializeCamera() {
+                try {
+                    this.showLoading('Mengakses kamera...');
+                    
+                    // Request camera permission
+                    this.videoStream = await navigator.mediaDevices.getUserMedia({
+                        video: { facingMode: 'user' }
+                    });
+
+                    const video = document.getElementById('video');
+                    video.srcObject = this.videoStream;
+
+                    video.onloadedmetadata = () => {
+                        this.hideLoading();
+                        // Start photo sequence after camera ready
+                        setTimeout(() => {
+                            this.showReadyThenCountdown();
+                        }, 1000);
+                    };
+
+                } catch (error) {
+                    this.hideLoading();
+                    this.showError('Tidak dapat mengakses kamera. Pastikan browser memiliki izin kamera.');
+                    console.error('Camera error:', error);
+                }
+            }
+
+            showReadyThenCountdown() {
+                const readyOverlay = document.getElementById('readyOverlay');
+                readyOverlay.classList.remove('hidden');
+
+                // Turn on light
+                fetch('/relay?state=on')
+                    .then(() => console.log("Lampu HIDUP"))
+                    .catch(() => console.log("Gagal hidupkan lampu"));
+
+                setTimeout(() => {
+                    readyOverlay.classList.add('hidden');
+                    this.startCountdown();
+                }, 3000);
+            }
+
+            startCountdown() {
+                const countdownOverlay = document.getElementById("countdownOverlay");
+                const countdownNumber = document.getElementById("countdownNumber");
+                const cekrekSound = document.getElementById("cekrekSound");
+
+                countdownOverlay.classList.remove("hidden");
+
+                let count = 5;
                 countdownNumber.textContent = count;
+
+                this.countdownTimer = setInterval(() => {
+                    count--;
+
+                    if (count === 4) {
+                        cekrekSound.play().catch(e => console.log('Audio play failed:', e));
+                    }
+
+                    if (count >= 0) {
+                        countdownNumber.textContent = count;
+                    }
+
+                    if (count < 0) {
+                        clearInterval(this.countdownTimer);
+                        countdownOverlay.classList.add("hidden");
+                        this.capturePhoto();
+                    }
+                }, 1000);
             }
 
-            if (count < 0) {
-                clearInterval(timer);
-                countdownOverlay.classList.add("hidden");
-                capturePhoto();
+            capturePhoto() {
+                const video = document.getElementById('video');
+                const canvas = document.getElementById('canvas');
+                const ctx = canvas.getContext('2d');
+
+                canvas.width = video.videoWidth;
+                canvas.height = video.videoHeight;
+                
+                ctx.drawImage(video, 0, 0);
+
+                canvas.toBlob(blob => {
+                    this.capturedImage = blob;
+
+                    if (this.videoStream) {
+                        this.videoStream.getTracks().forEach(track => track.stop());
+                    }
+
+                    // Turn off light
+                    fetch('/relay?state=off')
+                        .then(() => console.log("Lampu MATI"))
+                        .catch(() => console.log("Gagal matikan lampu"));
+
+                    this.autoGenerateFaceSwap();
+                }, 'image/jpeg', 0.9);
             }
-        }, 1000);
-    }
-function capturePhoto() {
-    const video = document.getElementById('video');
-    const canvas = document.getElementById('canvas');
-    const ctx = canvas.getContext('2d');
 
-    canvas.width = video.videoWidth;
-    canvas.height = video.videoHeight;
-    
-    ctx.drawImage(video, 0, 0);
+            async autoGenerateFaceSwap() {
+                if (!this.capturedImage || !this.selectedCharacter) {
+                    this.showError('Foto dan karakter harus dipilih');
+                    return;
+                }
+                
+                this.showLoading('Sedang memproses foto Anda...', 'Mohon tunggu 10-20 detik');
+                document.getElementById('cameraContainer').style.display = 'none';
+                
+                try {
+                    const formData = new FormData();
+                    formData.append('webcam', this.capturedImage, 'capture.jpg');
+                    formData.append('template_name', this.selectedCharacter.name);
+                    formData.append('apply_frame', 'true');
+                    
+                    const response = await fetch('/api/swap', {
+                        method: 'POST',
+                        headers: {
+                            'Authorization': `Bearer ${this.token}`
+                        },
+                        body: formData
+                    });
+                    
+                    const data = await response.json();
+                    
+                    if (data.success) {
+                        // Store result data
+                        const resultData = {
+                            result_url: data.data.result_url,
+                            result_filename: data.data.result_filename,
+                            template_used: this.selectedCharacter.name,
+                            faces_detected: data.data.faces_detected || { source: 1, template: 1 },
+                            frame_applied: true,
+                            processing_time: new Date().toISOString(),
+                            credits_remaining: data.data.credits_remaining
+                        };
+                        
+                        localStorage.setItem('resultData', JSON.stringify(resultData));
+                        
+                        // Update user credits
+                        if (this.currentUser) {
+                            this.currentUser.credit_balance = data.data.credits_remaining;
+                            localStorage.setItem('user', JSON.stringify(this.currentUser));
+                        }
+                        
+                        window.location.replace('/result');
+                    } else {
+                        if (response.status === 402) {
+                            // Credits habis
+                            this.showError('Credits habis! Redirecting to payment...');
+                            setTimeout(() => {
+                                window.location.replace('/payment');
+                            }, 2000);
+                        } else {
+                            this.showError(data.detail || 'Generate gagal');
+                            this.resetCamera();
+                        }
+                    }
+                } catch (error) {
+                    this.showError('Koneksi gagal. Silakan coba lagi.');
+                    console.error('Generate error:', error);
+                    this.resetCamera();
+                }
+            }
 
-    canvas.toBlob(blob => {
-        capturedImage = blob;
+            resetCamera() {
+                this.hideLoading();
+                document.getElementById('cameraContainer').style.display = 'block';
+                
+                if (this.countdownTimer) {
+                    clearInterval(this.countdownTimer);
+                    this.countdownTimer = null;
+                }
+                
+                // Restart camera
+                this.initializeCamera();
+            }
 
-        if (videoStream) {
-            videoStream.getTracks().forEach(track => track.stop());
+            showLoading(text = 'Loading...', subtext = '') {
+                const overlay = document.getElementById('loadingOverlay');
+                const textElement = overlay.querySelector('.loading-text');
+                const subtextElement = overlay.querySelector('.loading-subtext');
+                
+                textElement.textContent = text;
+                subtextElement.textContent = subtext;
+                overlay.classList.remove('hidden');
+            }
+
+            hideLoading() {
+                document.getElementById('loadingOverlay').classList.add('hidden');
+            }
+
+            showError(message) {
+                console.error(message);
+                alert(message); // You can replace with toast notification
+            }
+
+            // Cleanup when leaving page
+            cleanup() {
+                if (this.videoStream) {
+                    this.videoStream.getTracks().forEach(track => track.stop());
+                }
+                if (this.countdownTimer) {
+                    clearInterval(this.countdownTimer);
+                }
+            }
         }
 
-        // Lampu mati setelah capture selesai
-        fetch('/relay?state=off')
-        .then(() => console.log("Lampu HIDUP"))
-        .catch(() => console.log("Gagal nyalakan lampu"));
+        // Global functions
+        function goToPayment() {
+            window.location.href = '/payment';
+        }
 
-        autoGenerateFaceSwap();
-    }, 'image/jpeg', 0.9);
-}
+        async function logout() {
+            try {
+                const token = localStorage.getItem('token');
 
-        async function autoGenerateFaceSwap() {
-    if (!capturedImage || !selectedCharacter) {
-        showError('Foto dan karakter harus dipilih');
-        return;
-    }
-    
-    document.getElementById('cameraContainer').style.display = 'none';
-    
-    const loadingDiv = document.createElement('div');
-    loadingDiv.className = 'loading';
-    loadingDiv.style.display = 'block';
-    loadingDiv.innerHTML = `
-        <div class="spinner"></div>
-        <p>Sedang memproses foto Anda...</p>
-        <p style="font-size: 0.9rem; opacity: 0.8; margin-top: 10px;">
-            Mohon tunggu 10-20 detik
-        </p>
-    `;
-    document.querySelector('.page').insertBefore(loadingDiv, document.getElementById('previewContainer'));
-    
-    try {
-        const formData = new FormData();
-        formData.append('webcam', capturedImage, 'capture.jpg');
-        formData.append('template_name', selectedCharacter.name);
-        formData.append('apply_frame', 'true');
-        
-        const response = await fetch('/api/swap', {
-            method: 'POST',
-            headers: {
-                'Authorization': `Bearer ${token}`
-            },
-            body: formData
+                if (token) {
+                    try {
+                        await fetch('/api/logout', {
+                            method: 'POST',
+                            headers: {
+                                'Authorization': `Bearer ${token}`
+                            }
+                        });
+                    } catch (error) {
+                        console.log('Logout API not available, proceeding with local logout');
+                    }
+                }
+
+                localStorage.removeItem('token');
+                localStorage.removeItem('user');
+                localStorage.removeItem('selectedCharacter');
+
+                alert('Logout berhasil!');
+                window.location.href = '/login';
+            } catch (error) {
+                console.error('Logout error:', error);
+                localStorage.clear();
+                window.location.href = '/login';
+            }
+        }
+
+        // Initialize camera manager
+        let cameraManager;
+        document.addEventListener('DOMContentLoaded', function() {
+            cameraManager = new CameraManager();
         });
-        
-        const data = await response.json();
-        
-        if (data.success) {
-            // Ambil nama file hasilnya
-            const filename = data.data.result_filename;
-            
-            // Buat full URL ke server
-            const fullUrl = `https://faceswap.platinumphotobooth.my.id/static/results/${filename}`;
-
-            // Store ke localStorage sesuai format yang Asami ajarin
-            const resultData = {
-                result_url: fullUrl,
-                result_filename: filename,
-                template_used: selectedCharacter.name,
-                faces_detected: data.data.faces_detected || { source: 1, template: 1 },
-                frame_applied: true,
-                processing_time: new Date().toISOString()
-            };
-            
-            localStorage.setItem('resultData', JSON.stringify(resultData));
-            
-            window.location.replace('/result');
-        } else {
-            showError(data.detail || 'Generate gagal');
-            resetCamera();
-        }
-    } catch (error) {
-        showError('Koneksi gagal. Silakan coba lagi.');
-        console.error('Generate error:', error);
-        resetCamera();
-    }
-}
-        function resetCamera() {
-            isCountingDown = false;
-            const readyBtn = document.getElementById('readyBtn');
-            const countdownOverlay = document.getElementById('countdownOverlay');
-            
-            readyBtn.disabled = false;
-            readyBtn.innerHTML = '<i class="fas fa-camera"></i>';
-            countdownOverlay.classList.add('hidden');
-            
-            if (countdownTimer) {
-                clearInterval(countdownTimer);
-                countdownTimer = null;
-            }
-            
-            document.getElementById('cameraContainer').style.display = 'block';
-            
-            // Remove loading div if exists
-            const loadingDiv = document.querySelector('.loading');
-            if (loadingDiv) {
-                loadingDiv.remove();
-            }
-            
-            // Restart camera
-            initializeCamera();
-        }
-
-        // Retake photo (now resets camera)
-        document.getElementById('retakeBtn').addEventListener('click', function() {
-            resetCamera();
-        });
-
-        // Manual generate (backup function)
-        document.getElementById('generateBtn').addEventListener('click', async function() {
-            if (!capturedImage || !selectedCharacter) {
-                showError('Foto dan karakter harus dipilih');
-                return;
-            }
-            
-            await autoGenerateFaceSwap();
-        });
-
-        function showError(message) {
-            const errorAlert = document.getElementById('cameraError');
-            errorAlert.textContent = message;
-            errorAlert.style.display = 'block';
-            
-            setTimeout(() => {
-                errorAlert.style.display = 'none';
-            }, 5000);
-        }
 
         // Handle page visibility changes
         document.addEventListener('visibilitychange', function() {
-            if (document.hidden && videoStream) {
-                videoStream.getTracks().forEach(track => track.stop());
+            if (document.hidden && cameraManager) {
+                cameraManager.cleanup();
             }
         });
 
         // Cleanup when leaving page
         window.addEventListener('beforeunload', function() {
-            if (videoStream) {
-                videoStream.getTracks().forEach(track => track.stop());
+            if (cameraManager) {
+                cameraManager.cleanup();
             }
         });
-
-
-async function logout() {
-    try {
-        const token = localStorage.getItem('token');
-
-        if (token) {
-            try {
-                await fetch('/api/logout', {
-                    method: 'POST',
-                    headers: {
-                        'Authorization': `Bearer ${token}`
-                    }
-                });
-            } catch (error) {
-                console.log('Logout API not available, proceeding with local logout');
-            }
-        }
-
-        localStorage.removeItem('token');
-
-        const notification = document.getElementById('notification');
-        notification.className = 'notification success';
-        notification.textContent = 'Logout berhasil!';
-        notification.classList.add('show');
-
-        setTimeout(() => {
-            window.location.href = '/login';
-        }, 1000);
-    } catch (error) {
-        console.error('Logout error:', error);
-        localStorage.removeItem('token');
-        window.location.href = '/login';
-    }
-}
     </script>
 </body>
 </html>

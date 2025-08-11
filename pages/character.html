@@ -34,14 +34,53 @@
             position: relative;
             max-width: 1000px;
             margin: 0 auto;
-            border: 5px;
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            width: 100%;
+            margin-bottom: 30px;
         }
 
         .logo img {
-            width: 20%;
-            height: 20%;
+            width: 80px;
+            height: 80px;
             object-fit: cover;
-            padding-top: 25px;
+            cursor: pointer;
+        }
+
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .credit-display {
+            background: linear-gradient(45deg, #00ffcc, #0099ff);
+            color: #0a1f44;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-weight: bold;
+            box-shadow: 0 4px 15px rgba(0, 255, 204, 0.3);
+            font-size: 0.9rem;
+        }
+
+        .credit-display.low {
+            background: linear-gradient(45deg, #e74c3c, #c0392b);
+            color: white;
+            animation: pulse-warning 2s infinite;
+        }
+
+        @keyframes pulse-warning {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+        }
+
+        .user-name {
+            font-size: 0.9rem;
+            opacity: 0.9;
         }
 
         h3 {
@@ -51,20 +90,59 @@
             font-weight: 700;
         }
 
-        .subtitle {
-            font-size: 1.1rem;
-            margin-bottom: 40px;
-            opacity: 0.9;
-            font-weight: 300;
+        .credit-warning {
+            background: rgba(231, 76, 60, 0.2);
+            border: 1px solid rgba(231, 76, 60, 0.5);
+            color: #e74c3c;
+            padding: 20px;
+            border-radius: 15px;
+            margin: 20px 0;
+            max-width: 500px;
+            display: none;
         }
 
-        form {
-            width: 100%;
-            max-width: 800px;
+        .credit-warning h4 {
+            margin-bottom: 15px;
+            font-size: 1.3rem;
         }
+
+        .credit-warning p {
+            margin-bottom: 20px;
+            line-height: 1.5;
+        }
+
+        .payment-btn {
+            background: linear-gradient(45deg, #e74c3c, #c0392b);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 25px;
+            cursor: pointer;
+            font-weight: bold;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+            margin: 5px;
+        }
+
+        .payment-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(231, 76, 60, 0.4);
+        }
+
+        .skip-btn {
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            padding: 8px 20px;
+            border-radius: 20px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            margin: 5px;
+        }
+
         .menu-grid {
             display: grid;
-            grid-template-columns: repeat(4, 1fr); /* 4 gambar per baris */
+            grid-template-columns: repeat(4, 1fr);
             gap: 20px;
             margin-bottom: 40px;
             padding: 0 20px;
@@ -72,49 +150,14 @@
             margin-left: auto;
             margin-right: auto;
         }
+
         .menu-grid .menu-item {
             width: 100%;
             border-radius: 15px;
             overflow: hidden;
             transition: transform 0.3s ease, box-shadow 0.3s ease;
-            cursor: pointer;
-            transform: translateY(-10%);
-        }
-
-        .menu-grid .menu-item img {
-            width: 100%;
-            aspect-ratio: 9 / 16; /* Rasio 9:16 portrait */
-            object-fit: cover;
-            border-radius: 15px;
-            transition: transform 0.3s ease, box-shadow 0.3s ease;
             display: block;
-        }
-
-        .menu-grid .menu-item:hover img {
-            transform: translateY(-5px);
-            box-shadow: 0 8px 25px rgba(255, 255, 255, 0.6); /* Shadow putih */
-        }
-
-        .selected-template {
-            margin-top: 20px;
-            padding: 0;
-            background: transparent;
-            border: none;
-            border-radius: 15px;
-            backdrop-filter: none;
-            width: 90%;
-            max-width: 300px;
-            overflow: hidden;
-        }
-
-        .selected-template img {
-           width: 90%; /* Kurangi lebar menjadi 90% dari kontainer */
-            aspect-ratio: 9 / 16;
-            object-fit: cover;
-            border-radius: 15px;
-            transition: transform 0.3s ease, box-shadow 0.3s ease;
-            display: block;
-            margin: 0 auto; /* Supaya tetap center */
+            margin: 0 auto;
         }
 
         .continue-btn {
@@ -130,7 +173,6 @@
             transition: all 0.3s ease;
             display: none;
             box-shadow: 0 8px 25px rgba(0, 255, 204, 0.3);
-            display: none !important;
         }
 
         .continue-btn:hover {
@@ -138,33 +180,48 @@
             box-shadow: 0 15px 35px rgba(0, 255, 204, 0.4);
         }
 
-        .continue-btn:active {
-            transform: translateY(0);
+        .continue-btn:disabled {
+            background: #ccc;
+            color: #666;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
         }
 
-        .back-button {
-            position: absolute;
-            top: 20px;
-            left: 20px;
-            background: linear-gradient(45deg, #00ffcc, #0099ff);
-            color: #0a1f44;
-            padding: 12px 20px;
-            border: none;
-            border-radius: 15px;
-            font-weight: 600;
-            cursor: pointer;
-            text-decoration: none;
-            transition: all 0.3s ease;
+        .loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(10, 31, 68, 0.9);
             display: flex;
             align-items: center;
-            gap: 8px;
-            box-shadow: 0 4px 15px rgba(0, 255, 204, 0.3);
+            justify-content: center;
+            flex-direction: column;
+            z-index: 1000;
+            color: white;
         }
 
-        .back-button:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 8px 25px rgba(0, 255, 204, 0.4);
+        .loading-overlay.hidden {
+            display: none;
         }
+
+        .spinner {
+            width: 50px;
+            height: 50px;
+            border: 4px solid rgba(255, 255, 255, 0.3);
+            border-top: 4px solid #00ffcc;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-bottom: 20px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
         .alert {
             padding: 15px;
             border-radius: 10px;
@@ -181,86 +238,70 @@
             color: #ff6b6b;
         }
 
-        .loading {
-            display: none;
-            margin: 20px 0;
-        }
-
-        .spinner {
-            width: 30px;
-            height: 30px;
-            border: 3px solid rgba(255, 255, 255, 0.3);
-            border-top: 3px solid #00ffcc;
-            border-radius: 50%;
-            animation: spin 1s linear infinite;
-            margin: 0 auto;
-        }
-
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(20px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-
-        .page {
-            animation: fadeIn 0.6s ease-out;
-        }
-
         @media (max-width: 768px) {
             .menu-grid {
-                grid-template-columns: repeat(auto-fit, minmax(50px, 1fr));
-                gap: 20px;
-            }
-            
-            
-            h3 {
-                font-size: 1.5rem;
-                margin-top: 10px;
-            }
-        }
-          .character-name {
-                display: none; /* sembunyikan nama karakter di HP */
-            }
-        @media (max-width: 768px) {
-         .menu-grid {
-            grid-template-columns: repeat(4, 1fr); /* 2 gambar per baris */
-            gap: 15px;
-            padding: 0 10px;
-            }
-
-            .menu-grid .menu-item img {
-                aspect-ratio: 9 / 16;
-                height: auto;
-            }
-
-            .character-name {
-                display: none; /* sembunyikan nama karakter di HP */
+                grid-template-columns: repeat(4, 1fr);
+                gap: 15px;
+                padding: 0 10px;
             }
 
             h3 {
                 font-size: 1.3rem;
                 margin-top: 15px;
             }
+
+            .header {
+                flex-direction: column;
+                gap: 15px;
+                margin-bottom: 20px;
+            }
+
+            .logo img {
+                width: 60px;
+                height: 60px;
+            }
         }
     </style>
 </head>
 <body>
+    <!-- Loading Overlay -->
+    <div class="loading-overlay hidden" id="loadingOverlay">
+        <div class="spinner"></div>
+        <div id="loadingText">Loading...</div>
+    </div>
+
     <div class="page">
-        <form class="logout-form">
-        <div class="logo">
-            <img src="/static/images/logo.png" height="50px" onclick="logout()">
+        <div class="header">
+            <div class="logo">
+                <img src="/static/images/logo.png" alt="Logo" onclick="logout()">
+            </div>
+            <div class="user-info">
+                <div>
+                    <div class="user-name">Welcome, <span id="username">User</span></div>
+                    <div class="credit-display" id="creditDisplay">
+                        <i class="fas fa-coins"></i> Credits: <span id="creditCount">-</span>
+                    </div>
+                </div>
+            </div>
         </div>
-        </form>
+
         <h3>PILIH KARAKTERMU</h3>
-        <div class="alert error" id="characterError"></div>
-        <div class="loading" id="characterLoading">
-            <div class="spinner"></div>
-            <p>Memuat karakter...</p>
+
+        <!-- Credit Warning -->
+        <div class="credit-warning" id="creditWarning">
+            <h4><i class="fas fa-exclamation-triangle"></i> Credits Habis!</h4>
+            <p>Anda tidak memiliki credits untuk menggunakan fitur foto. Lakukan pembayaran untuk mendapatkan 3 credits dan mulai mengambil foto.</p>
+            <div>
+                <button class="payment-btn" onclick="goToPayment()">
+                    <i class="fas fa-credit-card"></i> Bayar Sekarang - Rp 5.000
+                </button>
+                <button class="skip-btn" onclick="goBack()">
+                    <i class="fas fa-arrow-left"></i> Kembali ke Dashboard
+                </button>
+            </div>
         </div>
+
+        <div class="alert error" id="characterError"></div>
         
         <form id="characterForm">
             <div class="menu-grid" id="characterGrid">
@@ -268,7 +309,7 @@
             </div>
             
             <div class="selected-template" id="selectedTemplate">
-                 <span id="selectedName"></span>
+                <span id="selectedName"></span>
             </div>
             
             <button type="button" class="continue-btn" id="continueBtn">
@@ -278,189 +319,396 @@
     </div>
 
     <script>
-// Ambil jumlah kunjungan dari localStorage
-    let visitCount = parseInt(localStorage.getItem('characterVisitCount')) || 0;
-
-    // Tambah 1 kunjungan
-    visitCount += 1;
-
-    // Simpan kembali
-    localStorage.setItem('characterVisitCount', visitCount);
-
-    console.log("Halaman karakter dikunjungi sebanyak:", visitCount);
-
-    // Jika sudah kunjungan ke-4, redirect ke halaman manipulasi
-    if (visitCount > 6) {
-        window.location.replace('/manipulasi');
-    }
-
-// ==== FITUR AUTO REDIRECT 60 DETIK TANPA AKTIVITAS ====
-let idleTimeout;
-const idleLimit = 60000; // 60 detik
-
-function resetIdleTimer() {
-    clearTimeout(idleTimeout);
-    idleTimeout = setTimeout(() => {
-        window.location.replace('/manipulasi');
-    }, idleLimit);
-}
-
-// Event untuk deteksi aktivitas
-['mousemove', 'mousedown', 'keypress', 'touchstart'].forEach(evt => {
-    document.addEventListener(evt, resetIdleTimer);
-});
-
-// Jalankan timer awal
-resetIdleTimer();
-// ======================================================
-
-        let selectedCharacter = null;
-        // Check authentication
-        const token = localStorage.getItem('token');
-        if (!token) {
-            window.location.replace('/login');
-        }
-
-  if (!sessionStorage.getItem('refreshed')) {
-        sessionStorage.setItem('refreshed', 'true');
-        setTimeout(() => {
-            window.location.reload();
-        }, 1000); // 0.5 detik
-    } else {
-        sessionStorage.removeItem('refreshed');
-    }// 500 ms = 0.5 detik
-
-        // Load characters on page load
-    document.addEventListener('DOMContentLoaded', function() {
-    // Hapus selectedCharacter biar tampilan grid karakter fresh
-    localStorage.removeItem('selectedCharacter');
-
-    loadCharacters();
-
-    // Optional: Repaint ekstra biar makin aman di HP tertentu
-    setTimeout(() => {
-        document.body.style.visibility = 'hidden';
-        document.body.offsetHeight;
-        document.body.style.visibility = 'visible';
-    }, 50);
-});
-
-        async function loadCharacters() {
-            const loading = document.getElementById('characterLoading');
-            const errorAlert = document.getElementById('characterError');
-            const grid = document.getElementById('characterGrid');
-            
-            loading.style.display = 'block';
-            errorAlert.style.display = 'none';
-            
-            try {
-                const response = await fetch('/api/templates', {
-                    headers: {
-                        'Authorization': `Bearer ${token}`
-                    }
-                });
+        class CharacterManager {
+            constructor() {
+                this.selectedCharacter = null;
+                this.currentUser = null;
+                this.token = localStorage.getItem('token');
+                this.visitCount = parseInt(localStorage.getItem('characterVisitCount')) || 0;
                 
-                const data = await response.json();
-                
-                if (data.success) {
-                    displayCharacters(data.templates);
-                } else {
-                    showError('Gagal memuat karakter');
+                this.init();
+            }
+
+            async init() {
+                try {
+                    // Show loading
+                    this.showLoading('Checking your account...');
+
+                    // Check authentication
+                    if (!this.checkAuth()) return;
+
+                    // Increment visit count
+                    this.updateVisitCount();
+
+                    // Load user data and check credits
+                    await this.loadUserData();
+
+                    // Check credits
+                    if (!this.checkCredits()) return;
+
+                    // Load characters
+                    await this.loadCharacters();
+
+                    this.hideLoading();
+                } catch (error) {
+                    console.error('Character manager initialization error:', error);
+                    this.showError('Gagal menginisialisasi halaman');
                 }
-            } catch (error) {
-                showError('Koneksi gagal. Silakan coba lagi.');
-            } finally {
-                loading.style.display = 'none';
             }
-        }
 
-        function displayCharacters(templates) {
-            const grid = document.getElementById('characterGrid');
-            grid.innerHTML = '';
-            
-            if (templates.length === 0) {
-                // Show demo templates if no templates available
-                const demoTemplates = [
-                    { name: 'superhero.jpg', path: '/static/templates/superhero.jpg' },
-                    { name: 'princess.jpg', path: '/static/templates/princess.jpg' },
-                    { name: 'warrior.jpg', path: '/static/templates/warrior.jpg' },
-                    { name: 'cartoon.jpg', path: '/static/templates/cartoon.jpg' }
-                ];
-                templates = demoTemplates;
+            checkAuth() {
+                if (!this.token) {
+                    this.showError('Silakan login terlebih dahulu');
+                    setTimeout(() => {
+                        window.location.replace('/login');
+                    }, 2000);
+                    return false;
+                }
+                return true;
             }
-            
-            templates.forEach((template, index) => {
-                const menuItem = document.createElement('div');
-                menuItem.className = 'menu-item';
+
+            updateVisitCount() {
+                this.visitCount += 1;
+                localStorage.setItem('characterVisitCount', this.visitCount);
                 
-                const characterName = template.name.replace(/\.[^/.]+$/, "").replace(/[-_]/g, ' ');
-                
-                menuItem.innerHTML = `
-                    <input type="radio" id="char${index}" name="character" value="${template.name}" style="display: none;">
-                    <label for="char${index}">
-                        <img src="${template.path}" alt="${characterName}" onerror="this.src='data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjE4MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjNjY3ZWVhIi8+PHRleHQgeD0iNTAlIiB5PSI1MCUiIGZvbnQtZmFtaWx5PSJBcmlhbCwgc2Fucy1zZXJpZiIgZm9udC1zaXplPSIxNiIgZmlsbD0iI2ZmZiIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZHk9Ii4zZW0iPiR7Y2hhcmFjdGVyTmFtZX08L3RleHQ+PC9zdmc+'">
-                        <div class="character-name">${characterName}</div>
-                    </label>
-                `;
-                
-                grid.appendChild(menuItem);
-            });
-            
-            // Add event listeners to radio buttons
-            document.querySelectorAll('input[name="character"]').forEach(radio => {
-                radio.addEventListener('change', function() {
-                    if (this.checked) {
-                        selectCharacter(this.value, this.nextElementSibling.querySelector('.character-name').textContent);
+                // If user keeps returning here too many times, redirect to manipulasi
+                if (this.visitCount > 6) {
+                    this.showLoading('Redirecting to main menu...');
+                    setTimeout(() => {
+                        window.location.replace('/manipulasi');
+                    }, 1500);
+                    return false;
+                }
+                return true;
+            }
+
+            async loadUserData() {
+                try {
+                    this.showLoading('Loading your profile...');
+                    
+                    const response = await fetch('/api/me', {
+                        headers: {'Authorization': `Bearer ${this.token}`}
+                    });
+
+                    if (!response.ok) {
+                        throw new Error('Failed to load user data');
                     }
-                });
-            });
-        }
 
-        function selectCharacter(templateName, displayName) {
-            selectedCharacter = {
-                name: templateName,
-                displayName: displayName
-            };
-            
-            // Show selected template
-            const selectedTemplate = document.getElementById('selectedTemplate');
-            const selectedName = document.getElementById('selectedName');
-            const continueBtn = document.getElementById('continueBtn');
-            
-            selectedName.textContent = displayName;
-            selectedTemplate.style.display = 'block';
-            continueBtn.style.display = 'inline-block';
-
-            // Otomatis klik tombol lanjut
-            continueBtn.click();
-        }
-
-        // Continue button
-        document.getElementById('continueBtn').addEventListener('click', function() {
-            if (selectedCharacter) {
-                // Store selected character
-                localStorage.setItem('selectedCharacter', JSON.stringify(selectedCharacter));
-                // Redirect to camera page
-                window.location.replace('/camera');
+                    const data = await response.json();
+                    if (data.success) {
+                        this.currentUser = data.user;
+                        this.updateUserDisplay();
+                        
+                        // Update localStorage dengan data terbaru
+                        localStorage.setItem('user', JSON.stringify(this.currentUser));
+                    } else {
+                        throw new Error('Invalid user data');
+                    }
+                } catch (error) {
+                    console.error('Error loading user data:', error);
+                    this.showError('Gagal memuat data user');
+                    setTimeout(() => {
+                        window.location.replace('/login');
+                    }, 2000);
+                }
             }
+
+            updateUserDisplay() {
+                if (this.currentUser) {
+                    document.getElementById('username').textContent = this.currentUser.username;
+                    document.getElementById('creditCount').textContent = this.currentUser.credit_balance;
+                    
+                    const creditDisplay = document.getElementById('creditDisplay');
+                    if (this.currentUser.credit_balance <= 0) {
+                        creditDisplay.classList.add('low');
+                    } else {
+                        creditDisplay.classList.remove('low');
+                    }
+                }
+            }
+
+            checkCredits() {
+                if (!this.currentUser || this.currentUser.credit_balance < 1) {
+                    this.showCreditWarning();
+                    return false;
+                }
+                return true;
+            }
+
+            showCreditWarning() {
+                this.hideLoading();
+                document.getElementById('creditWarning').style.display = 'block';
+                document.getElementById('characterGrid').style.opacity = '0.3';
+                
+                // Disable all character items
+                document.querySelectorAll('.menu-item').forEach(item => {
+                    item.classList.add('disabled');
+                    item.onclick = () => {
+                        alert('Credits habis! Silakan lakukan pembayaran terlebih dahulu.');
+                        this.goToPayment();
+                    };
+                });
+
+                // Auto redirect ke payment setelah 10 detik
+                let redirectTimer = 10;
+                const redirectInterval = setInterval(() => {
+                    redirectTimer--;
+                    if (redirectTimer <= 0) {
+                        clearInterval(redirectInterval);
+                        this.goToPayment();
+                    }
+                }, 1000);
+            }
+
+            async loadCharacters() {
+                try {
+                    this.showLoading('Loading characters...');
+                    
+                    const response = await fetch('/api/templates', {
+                        headers: {'Authorization': `Bearer ${this.token}`}
+                    });
+                    
+                    const data = await response.json();
+                    
+                    if (data.success) {
+                        this.displayCharacters(data.templates);
+                    } else {
+                        this.showError('Gagal memuat karakter');
+                    }
+                } catch (error) {
+                    this.showError('Koneksi gagal. Silakan coba lagi.');
+                    console.error('Load characters error:', error);
+                }
+            }
+
+            displayCharacters(templates) {
+                const grid = document.getElementById('characterGrid');
+                grid.innerHTML = '';
+                
+                if (templates.length === 0) {
+                    // Show demo templates if no templates available
+                    const demoTemplates = [
+                        { name: 'superhero.jpg', path: '/static/templates/superhero.jpg' },
+                        { name: 'princess.jpg', path: '/static/templates/princess.jpg' },
+                        { name: 'warrior.jpg', path: '/static/templates/warrior.jpg' },
+                        { name: 'cartoon.jpg', path: '/static/templates/cartoon.jpg' }
+                    ];
+                    templates = demoTemplates;
+                }
+                
+                templates.forEach((template, index) => {
+                    const menuItem = document.createElement('div');
+                    menuItem.className = 'menu-item';
+                    
+                    const characterName = template.name.replace(/\.[^/.]+$/, "").replace(/[-_]/g, ' ');
+                    
+                    // Check if user has credits
+                    const hasCredits = this.currentUser && this.currentUser.credit_balance > 0;
+                    
+                    menuItem.innerHTML = `
+                        <input type="radio" id="char${index}" name="character" value="${template.name}" style="display: none;">
+                        <label for="char${index}">
+                            <img src="${template.path}" alt="${characterName}" onerror="this.src='data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjE4MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjNjY3ZWVhIi8+PHRleHQgeD0iNTAlIiB5PSI1MCUiIGZvbnQtZmFtaWx5PSJBcmlhbCwgc2Fucy1zZXJpZiIgZm9udC1zaXplPSIxNiIgZmlsbD0iI2ZmZiIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZHk9Ii4zZW0iPiR7Y2hhcmFjdGVyTmFtZX08L3RleHQ+PC9zdmc+'">
+                            ${!hasCredits ? '<div class="credit-required">1 Credit</div>' : ''}
+                        </label>
+                    `;
+                    
+                    // Add click handler
+                    if (hasCredits) {
+                        menuItem.addEventListener('click', () => {
+                            this.selectCharacter(template.name, characterName);
+                        });
+                    } else {
+                        menuItem.classList.add('disabled');
+                        menuItem.addEventListener('click', () => {
+                            alert('Credits habis! Silakan lakukan pembayaran untuk menggunakan karakter ini.');
+                            this.goToPayment();
+                        });
+                    }
+                    
+                    grid.appendChild(menuItem);
+                });
+            }
+
+            selectCharacter(templateName, displayName) {
+                // Double check credits before selection
+                if (!this.currentUser || this.currentUser.credit_balance < 1) {
+                    alert('Credits habis! Silakan lakukan pembayaran terlebih dahulu.');
+                    this.goToPayment();
+                    return;
+                }
+
+                this.selectedCharacter = {
+                    name: templateName,
+                    displayName: displayName
+                };
+                
+                // Show selected template
+                const selectedTemplate = document.getElementById('selectedTemplate');
+                const selectedName = document.getElementById('selectedName');
+                const continueBtn = document.getElementById('continueBtn');
+                
+                selectedName.textContent = displayName;
+                selectedTemplate.style.display = 'block';
+                continueBtn.style.display = 'inline-block';
+
+                // Store selected character
+                localStorage.setItem('selectedCharacter', JSON.stringify(this.selectedCharacter));
+
+                // Auto-proceed to camera with final credit check
+                setTimeout(() => {
+                    this.proceedToCamera();
+                }, 500);
+            }
+
+            async proceedToCamera() {
+                if (!this.selectedCharacter) return;
+
+                // Final credit check before proceeding
+                try {
+                    this.showLoading('Checking credits before proceeding...');
+                    
+                    const response = await fetch('/api/me', {
+                        headers: {'Authorization': `Bearer ${this.token}`}
+                    });
+
+                    if (response.ok) {
+                        const data = await response.json();
+                        if (data.success && data.user.credit_balance >= 1) {
+                            // Credits OK, proceed to camera
+                            this.showLoading('Redirecting to camera...');
+                            setTimeout(() => {
+                                window.location.replace('/camera');
+                            }, 1000);
+                        } else {
+                            // Credits habis, redirect to payment
+                            this.showLoading('Credits insufficient, redirecting to payment...');
+                            setTimeout(() => {
+                                this.goToPayment();
+                            }, 1500);
+                        }
+                    } else {
+                        throw new Error('Failed to verify credits');
+                    }
+                } catch (error) {
+                    console.error('Credit verification error:', error);
+                    this.showError('Gagal memverifikasi credits');
+                    setTimeout(() => {
+                        this.goToPayment();
+                    }, 2000);
+                }
+            }
+
+            goToPayment() {
+                window.location.href = '/payment';
+            }
+
+            goBack() {
+                window.location.href = '/dashboard';
+            }
+
+            showLoading(text = 'Loading...') {
+                const overlay = document.getElementById('loadingOverlay');
+                const textElement = document.getElementById('loadingText');
+                textElement.textContent = text;
+                overlay.classList.remove('hidden');
+            }
+
+            hideLoading() {
+                document.getElementById('loadingOverlay').classList.add('hidden');
+            }
+
+            showError(message) {
+                const errorAlert = document.getElementById('characterError');
+                errorAlert.textContent = message;
+                errorAlert.style.display = 'block';
+                
+                setTimeout(() => {
+                    errorAlert.style.display = 'none';
+                }, 5000);
+            }
+        }
+
+        // Global functions
+        function goToPayment() {
+            window.location.href = '/payment';
+        }
+
+        function goBack() {
+            window.location.href = '/dashboard';
+        }
+
+        async function logout() {
+            try {
+                const token = localStorage.getItem('token');
+
+                if (token) {
+                    try {
+                        await fetch('/api/logout', {
+                            method: 'POST',
+                            headers: {
+                                'Authorization': `Bearer ${token}`
+                            }
+                        });
+                    } catch (error) {
+                        console.log('Logout API not available, proceeding with local logout');
+                    }
+                }
+
+                localStorage.removeItem('token');
+                localStorage.removeItem('user');
+                localStorage.removeItem('selectedCharacter');
+                localStorage.removeItem('characterVisitCount');
+
+                alert('Logout berhasil!');
+                window.location.href = '/login';
+            } catch (error) {
+                console.error('Logout error:', error);
+                localStorage.clear();
+                window.location.href = '/login';
+            }
+        }
+
+        // Initialize character manager
+        let characterManager;
+        document.addEventListener('DOMContentLoaded', function() {
+            // Clear previous selected character for fresh selection
+            localStorage.removeItem('selectedCharacter');
+            
+            characterManager = new CharacterManager();
+
+            // Setup auto-redirect timer untuk idle users
+            let idleTimeout;
+            const idleLimit = 60000; // 60 seconds
+
+            function resetIdleTimer() {
+                clearTimeout(idleTimeout);
+                idleTimeout = setTimeout(() => {
+                    if (characterManager) {
+                        characterManager.showLoading('Session timeout, redirecting...');
+                        setTimeout(() => {
+                            window.location.replace('/dashboard');
+                        }, 2000);
+                    }
+                }, idleLimit);
+            }
+
+            // Events to detect activity
+            ['mousemove', 'mousedown', 'keypress', 'touchstart'].forEach(evt => {
+                document.addEventListener(evt, resetIdleTimer);
+            });
+
+            // Start idle timer
+            resetIdleTimer();
         });
 
-        function showError(message) {
-            const errorAlert = document.getElementById('characterError');
-            errorAlert.textContent = message;
-            errorAlert.style.display = 'block';
-            
-            setTimeout(() => {
-                errorAlert.style.display = 'none';
-            }, 5000);
-        }
-
-        function logout() {
-            localStorage.removeItem('token');
-            localStorage.removeItem('user');
-            localStorage.removeItem('selectedCharacter');
-            window.location.replace('/login');
-        }
+        // Handle page visibility changes
+        document.addEventListener('visibilitychange', function() {
+            if (!document.hidden && characterManager) {
+                // Refresh user data when page becomes visible
+                characterManager.loadUserData();
+            }
+        });
     </script>
 </body>
 </html>

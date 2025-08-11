@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pilih Karakter - Platinum Cineplex</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Poppins', sans-serif; }
+        body {
+            background: linear-gradient(150deg, #0a1f44, #ff1493);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: flex-start; /* Nempel ke atas */
+            color: #fff;
+            text-align: center;
+            padding: 10px; /* Jarak atas & kanan-kiri */
+        }
+        h3 { font-size: 2rem; margin-bottom: 20px; }
+        .menu-grid {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 20px;
+            max-width: 800px;
+            width: 100%;
+            margin-top: 10px;
+            align-items: flex-end;
+        }
+        .menu-item {
+            display: flex;
+            align-items: flex-end;
+            justify-content: center;
+            height: 200px;
+            cursor: pointer;
+        }
+        .menu-item img {
+            max-height: 100%;
+            width: auto;
+            object-fit: contain;
+            border-radius: 15px;
+            display: block;
+            transition: all 0.3s ease;
+            box-shadow: none;
+        }
+        .menu-item img:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 25px rgba(255,255,255,0.4);
+        }
+        .menu-item img.selected {
+            box-shadow: 0 0 20px 5px rgba(255,255,255,0.8);
+            transform: translateY(-3px);
+        }
+    </style>
+</head>
+<body>
+<form class="logout-form">
+        <div class="logo">
+            <img src="/static/images/logo.png" height="50px" onclick="logout()">
+        </div>
+</form>
+<h3>PILIH KARAKTERMU</h3>
+
+<div class="menu-grid" id="characterGrid"></div>
+
+<script>
+// Ambil jumlah kunjungan dari localStorage
+    let visitCount = parseInt(localStorage.getItem('characterVisitCount')) || 0;
+
+    // Tambah 1 kunjungan
+    visitCount += 1;
+
+    // Simpan kembali
+    localStorage.setItem('characterVisitCount', visitCount);
+
+    console.log("Halaman karakter dikunjungi sebanyak:", visitCount);
+
+    // Jika sudah kunjungan ke-4, redirect ke halaman manipulasi
+    if (visitCount > 6) {
+        window.location.replace('/ar_manipulasi');
+    }
+
+// ==== FITUR AUTO REDIRECT 60 DETIK TANPA AKTIVITAS ====
+let idleTimeout;
+const idleLimit = 60000; // 60 detik
+
+function resetIdleTimer() {
+    clearTimeout(idleTimeout);
+    idleTimeout = setTimeout(() => {
+        window.location.replace('/ar_manipulasi');
+    }, idleLimit);
+}
+
+// Event untuk deteksi aktivitas
+['mousemove', 'mousedown', 'keypress', 'touchstart'].forEach(evt => {
+    document.addEventListener(evt, resetIdleTimer);
+});
+
+// Jalankan timer awal
+resetIdleTimer();
+// ======================================================
+
+        let selectedCharacter = null;
+        // Check authentication
+        const token = localStorage.getItem('token');
+        if (!token) {
+            window.location.replace('/login');
+        }
+
+  if (!sessionStorage.getItem('refreshed')) {
+        sessionStorage.setItem('refreshed', 'true');
+        setTimeout(() => {
+            window.location.reload();
+        }, 1000); // 0.5 detik
+    } else {
+        sessionStorage.removeItem('refreshed');
+    }// 500 ms = 0.5 detik
+
+        // Load characters on page load
+    document.addEventListener('DOMContentLoaded', function() {
+    // Hapus selectedCharacter biar tampilan grid karakter fresh
+    localStorage.removeItem('selectedCharacter');
+    
+    loadCharacters();
+
+    // Optional: Repaint ekstra biar makin aman di HP tertentu
+    setTimeout(() => {
+        document.body.style.visibility = 'hidden';
+        document.body.offsetHeight;
+        document.body.style.visibility = 'visible';
+    }, 50);
+});
+
+if (localStorage.getItem("refreshOnce") === "true") {
+    localStorage.removeItem("refreshOnce");
+    window.location.reload();
+}
+
+const characters = [
+    { name: 'Jumbo.png' },
+    { name: 'minion.png' },
+];
+
+const grid = document.getElementById('characterGrid');
+
+characters.forEach(char => {
+    const imagePath = `/static/ar_assets/thumbnail/${char.name}`;
+    const item = document.createElement('div');
+    item.className = 'menu-item';
+    item.innerHTML = `<img src="${imagePath}" alt="${char.name}">`;
+    
+    const img = item.querySelector('img');
+    img.addEventListener('click', () => {
+        document.querySelectorAll('.menu-item img').forEach(i => i.classList.remove('selected'));
+        img.classList.add('selected');
+        
+        const selectedCharacter = { name: char.name, path: imagePath };
+        localStorage.setItem('selectedCharacter', JSON.stringify(selectedCharacter));
+        window.location.replace('/ar_camera');
+    });
+    
+    grid.appendChild(item);
+});
+
+ function logout() {
+            localStorage.removeItem('token');
+            localStorage.removeItem('user');
+            localStorage.removeItem('selectedCharacter');
+            window.location.replace('/login');
+        }
+</script>
+
+</body>
+</html>

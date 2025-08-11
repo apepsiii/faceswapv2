@@ -1,0 +1,707 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Platinum Cineplex</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Poppins', sans-serif;
+        }
+        
+        body {
+            text-align: center;
+            font-family: sans-serif;
+            background: linear-gradient(150deg, #0a1f44, #ff1493);
+            padding: 20px;
+            margin: 0;
+            color: #fff;
+            min-height: 100vh;
+            padding-top: 20px;
+            overflow: hidden;
+        }
+
+        .page {
+            min-height: 100vh;
+            display: flex;
+            justify-content: flex-start; /* Konten ngumpul di atas */
+            align-items: center;
+            flex-direction: column;
+            position: relative;
+            max-width: 600px;
+            margin: 0 auto;
+            padding-top: 10px; /* Biar nggak terlalu mepet atas */
+        }
+        .logo img {
+            width: 30%;
+            height: 30%;
+            object-fit: cover;
+        }
+        h3 {
+            margin-bottom: 10px;
+            font-size: 2rem;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+            font-weight: 700;
+        }
+
+        .subtitle {
+            font-size: 1rem;
+            margin-bottom: 30px;
+            opacity: 0.9;
+            font-weight: 300;
+        }
+
+        .selected-character {
+            display: none !important;
+        }
+
+        .camera-container {
+            position: relative;
+            width: 600px;
+            max-width: auto;
+            height: 800px;
+            margin-top: 40px;
+            margin-bottom: 100px;
+            border-radius: 20px;
+            overflow: hidden;
+            background: #000;
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.3);
+        }
+
+        #video {
+            width: 100%;
+            height: 800px;
+            object-fit: cover;
+            display: block;
+            transform: scaleX(-1);
+        }
+
+        #canvas {
+            display: none;
+        }
+
+        .camera-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            border: 3px solid rgba(0, 255, 204, 0.6);
+            border-radius: 20px;
+            pointer-events: none;
+        }
+
+        .countdown-overlay {
+            position: absolute;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            background-color: transparent; /* Jangan bikin layar hitam */
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-direction: column;
+            z-index: 10;
+        }
+
+        .countdown-number {
+            font-size: 4rem;
+            font-weight: 900;
+            color: #ffff;
+            animation: pulse 1s ease-in-out;
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(0.8); opacity: 0.5; }
+            50% { transform: scale(1.2); opacity: 1; }
+            100% { transform: scale(1); opacity: 0.8; }
+        }
+
+        .countdown-overlay.hidden {
+            display: none;
+        }
+
+        .camera-controls {
+            position: absolute;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 20px;
+            align-items: center;
+        }
+
+        .camera-btn {
+            width: 60px;
+            height: 60px;
+            border: none;
+            border-radius: 50%;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+            display: none !important;
+        }
+
+        .camera-btn.switch {
+            background: rgba(255, 255, 255, 0.9);
+            color: #0a1f44;
+            font-size: 1.2rem;
+        }
+
+        .camera-btn.capture {
+            width: 70px;
+            height: 70px;
+            color: #0a1f44;
+            font-size: 1.5rem;
+            box-shadow: 0 8px 25px rgba(0, 255, 204, 0.4);
+        }
+
+        .camera-btn:hover {
+            transform: scale(1.1);
+        }
+
+        .camera-btn:active {
+            transform: scale(0.95);
+        }
+
+        .preview-container {
+            width: 100%;
+            max-width: 400px;
+            text-align: center;
+            display: none;
+        }
+
+        .preview-image {
+            width: 100%;
+            border-radius: 20px;
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.3);
+            margin-bottom: 20px;
+        }
+
+        .btn {
+            padding: 15px 30px;
+            border: none;
+            border-radius: 15px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin: 0 10px 10px 10px;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .btn-primary {
+            background: linear-gradient(45deg, #00ffcc, #0099ff);
+            color: #0a1f44;
+            box-shadow: 0 8px 25px rgba(0, 255, 204, 0.3);
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 15px 35px rgba(0, 255, 204, 0.4);
+        }
+
+        .btn-secondary {
+            background: rgba(255, 255, 255, 0.1);
+            color: #fff;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            backdrop-filter: blur(10px);
+        }
+
+        .btn-secondary:hover {
+            background: rgba(255, 255, 255, 0.2);
+            transform: translateY(-2px);
+        }
+
+        .back-button {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            background: linear-gradient(45deg, #00ffcc, #0099ff);
+            color: #0a1f44;
+            padding: 12px 20px;
+            border: none;
+            border-radius: 15px;
+            font-weight: 600;
+            cursor: pointer;
+            text-decoration: none;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            box-shadow: 0 4px 15px rgba(0, 255, 204, 0.3);
+        }
+
+        
+        .alert {
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            display: none;
+            max-width: 400px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        .alert.error {
+            background: rgba(255, 107, 107, 0.2);
+            border: 1px solid rgba(255, 107, 107, 0.5);
+            color: #ff6b6b;
+        }
+
+        .loading {
+            display: none;
+            margin: 20px 0;
+        }
+        .ready-overlay {
+            position: absolute;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            z-index: 20;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            color: white;
+            font-size: 2rem;
+            font-weight: bold;
+            transition: opacity 0.5s;
+        }
+
+        .ready-overlay.hidden {
+            display: none;
+        }
+        .spinner {
+            width: 30px;
+            height: 30px;
+            border: 3px solid rgba(255, 255, 255, 0.3);
+            border-top: 3px solid #00ffcc;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 10px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .page {
+            animation: fadeIn 0.6s ease-out;
+        }
+
+        @media (max-width: 768px) {
+
+            body {
+                padding: 0;
+            }
+
+            .page {
+                position: absolute;
+                top: 5%;
+                left: 50%;
+                transform: translateX(-50%);
+                width: 100%;
+                max-width: 600px;
+            }
+
+            .camera-container {
+                max-width: 100%;
+                margin: 20px auto;
+            }
+
+            #video {
+                height: 500px;
+            }
+
+            h3 {
+                font-size: 1.5rem;
+                margin-top: 10px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="page">
+        <form class="logout-form">
+            <div class="logo">
+                <img src="/static/images/logo.png" height="50px" onclick="logout()">
+            </div>
+        </form>
+        
+        <h3>EKSPRESIKAN GAYA MU</h3>
+        <div class="selected-character" id="selectedCharacter">
+            <span id="characterName"></span>
+        </div>
+        
+        <div class="alert error" id="cameraError"></div>
+        <div class="loading" id="cameraLoading">
+            <div class="spinner"></div>
+            <p>Mengakses kamera...</p>
+        </div>
+        
+        <div class="camera-container" id="cameraContainer">
+            <video id="video" autoplay muted playsinline></video>
+            <canvas id="canvas"></canvas>
+            <div class="camera-overlay"></div>
+            <div class="face-guide"></div>
+            
+            <!-- Countdown Overlay -->
+             <div class="ready-overlay hidden" id="readyOverlay">
+                <div class="ready-text">Ready...</div>
+            </div>
+            <div class="countdown-overlay hidden" id="countdownOverlay">
+                <div class="countdown-number" id="countdownNumber">5</div>
+            </div>
+            <audio id="cekrekSound" src="/static/images/cekrek.mp3" preload="auto"></audio>
+            <div class="camera-controls">
+                <button class="camera-btn switch" id="switchCamera" title="Ganti Kamera">
+                    
+                </button>
+                <button class="camera-btn capture" id="readyBtn" title="Siap Foto">
+                    
+                </button>
+            </div>
+        </div>
+        
+        <div class="preview-container" id="previewContainer">
+            <img id="previewImage" class="preview-image" alt="Preview">
+            
+            <div>
+                <button class="btn btn-primary" id="generateBtn">
+                    <i class="fas fa-magic"></i> Generate Ulang
+                </button>
+                <button class="btn btn-secondary" id="retakeBtn">
+                    <i class="fas fa-redo"></i> Foto Ulang
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let videoStream = null;
+        let currentCamera = 'user'; // 'user' for front, 'environment' for back
+        let capturedImage = null;
+        let selectedCharacter = null;
+        let countdownTimer = null;
+        let isCountingDown = false;
+        
+        // Check authentication and character selection
+        const token = localStorage.getItem('token');
+        const characterData = localStorage.getItem('selectedCharacter');
+        
+        if (!token) {
+            window.location.replace('/login');
+        }
+        
+        if (!characterData) {
+            window.location.replace('/character');
+        }
+        
+        selectedCharacter = JSON.parse(characterData);
+        
+        // Display selected character
+        document.getElementById('characterName').textContent = selectedCharacter.displayName;
+
+        // Initialize camera on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            initializeCamera();
+        });
+
+       async function initializeCamera() {
+        const loading = document.getElementById('cameraLoading');
+        const errorAlert = document.getElementById('cameraError');
+        const video = document.getElementById('video');
+
+        loading.style.display = 'block';
+        errorAlert.style.display = 'none';
+
+        try {
+            // Request camera permission
+            videoStream = await navigator.mediaDevices.getUserMedia({
+            video: true
+        });
+
+            video.srcObject = videoStream;
+
+            video.onloadedmetadata = () => {
+            loading.style.display = 'none';
+
+                // Tampilkan ready text 5 detik dulu, lalu mulai countdown
+            showReadyThenCountdown();
+            };
+
+        } catch (error) {
+            loading.style.display = 'none';
+            showError('Tidak dapat mengakses kamera. Pastikan browser memiliki izin kamera.');
+            console.error('Camera error:', error);
+        }
+    }
+        // Switch camera
+        document.getElementById('switchCamera').addEventListener('click', async function() {
+            if (videoStream) {
+                videoStream.getTracks().forEach(track => track.stop());
+            }
+            
+            currentCamera = currentCamera === 'user' ? 'environment' : 'user';
+            await initializeCamera();
+        });
+
+        // Ready button (starts countdown)
+        document.getElementById('readyBtn').addEventListener('click', function() {
+            if (isCountingDown) return;
+            
+            startCountdown();
+        });
+function showReadyThenCountdown() {
+    console.log("showReadyThenCountdown DIPANGGIL");
+
+    const readyOverlay = document.getElementById('readyOverlay');
+    readyOverlay.classList.remove('hidden');
+
+    // Lampu nyala tepat saat tulisan "READY" muncul
+    fetch('/relay?state=on')
+    .then(() => console.log("Lampu MATI"))
+    .catch(() => console.log("Gagal matikan lampu"));
+
+    setTimeout(() => {
+        readyOverlay.classList.add('hidden');
+        startCountdown();
+    }, 3000); 
+}
+   
+     function startCountdown() {
+        const countdownOverlay = document.getElementById("countdownOverlay");
+        const countdownNumber = document.getElementById("countdownNumber");
+        const cekrekSound = document.getElementById("cekrekSound");
+
+        countdownOverlay.classList.remove("hidden");
+
+        let count = 5;
+        countdownNumber.textContent = count;
+
+        const timer = setInterval(() => {
+            count--;
+
+            if (count === 4) {
+                cekrekSound.play();
+            }
+
+            if (count >= 0) {
+                countdownNumber.textContent = count;
+            }
+
+            if (count < 0) {
+                clearInterval(timer);
+                countdownOverlay.classList.add("hidden");
+                capturePhoto();
+            }
+        }, 1000);
+    }
+function capturePhoto() {
+    const video = document.getElementById('video');
+    const canvas = document.getElementById('canvas');
+    const ctx = canvas.getContext('2d');
+
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+    
+    ctx.drawImage(video, 0, 0);
+
+    canvas.toBlob(blob => {
+        capturedImage = blob;
+
+        if (videoStream) {
+            videoStream.getTracks().forEach(track => track.stop());
+        }
+
+        // Lampu mati setelah capture selesai
+        fetch('/relay?state=off')
+        .then(() => console.log("Lampu HIDUP"))
+        .catch(() => console.log("Gagal nyalakan lampu"));
+
+        autoGenerateFaceSwap();
+    }, 'image/jpeg', 0.9);
+}
+
+        async function autoGenerateFaceSwap() {
+    if (!capturedImage || !selectedCharacter) {
+        showError('Foto dan karakter harus dipilih');
+        return;
+    }
+    
+    document.getElementById('cameraContainer').style.display = 'none';
+    
+    const loadingDiv = document.createElement('div');
+    loadingDiv.className = 'loading';
+    loadingDiv.style.display = 'block';
+    loadingDiv.innerHTML = `
+        <div class="spinner"></div>
+        <p>Sedang memproses foto Anda...</p>
+        <p style="font-size: 0.9rem; opacity: 0.8; margin-top: 10px;">
+            Mohon tunggu 10-20 detik
+        </p>
+    `;
+    document.querySelector('.page').insertBefore(loadingDiv, document.getElementById('previewContainer'));
+    
+    try {
+        const formData = new FormData();
+        formData.append('webcam', capturedImage, 'capture.jpg');
+        formData.append('template_name', selectedCharacter.name);
+        formData.append('apply_frame', 'true');
+        
+        const response = await fetch('/api/swap', {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${token}`
+            },
+            body: formData
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            // Ambil nama file hasilnya
+            const filename = data.data.result_filename;
+            
+            // Buat full URL ke server
+            const fullUrl = `https://faceswap.platinumphotobooth.my.id/static/results/${filename}`;
+
+            // Store ke localStorage sesuai format yang Asami ajarin
+            const resultData = {
+                result_url: fullUrl,
+                result_filename: filename,
+                template_used: selectedCharacter.name,
+                faces_detected: data.data.faces_detected || { source: 1, template: 1 },
+                frame_applied: true,
+                processing_time: new Date().toISOString()
+            };
+            
+            localStorage.setItem('resultData', JSON.stringify(resultData));
+            
+            window.location.replace('/result');
+        } else {
+            showError(data.detail || 'Generate gagal');
+            resetCamera();
+        }
+    } catch (error) {
+        showError('Koneksi gagal. Silakan coba lagi.');
+        console.error('Generate error:', error);
+        resetCamera();
+    }
+}
+        function resetCamera() {
+            isCountingDown = false;
+            const readyBtn = document.getElementById('readyBtn');
+            const countdownOverlay = document.getElementById('countdownOverlay');
+            
+            readyBtn.disabled = false;
+            readyBtn.innerHTML = '<i class="fas fa-camera"></i>';
+            countdownOverlay.classList.add('hidden');
+            
+            if (countdownTimer) {
+                clearInterval(countdownTimer);
+                countdownTimer = null;
+            }
+            
+            document.getElementById('cameraContainer').style.display = 'block';
+            
+            // Remove loading div if exists
+            const loadingDiv = document.querySelector('.loading');
+            if (loadingDiv) {
+                loadingDiv.remove();
+            }
+            
+            // Restart camera
+            initializeCamera();
+        }
+
+        // Retake photo (now resets camera)
+        document.getElementById('retakeBtn').addEventListener('click', function() {
+            resetCamera();
+        });
+
+        // Manual generate (backup function)
+        document.getElementById('generateBtn').addEventListener('click', async function() {
+            if (!capturedImage || !selectedCharacter) {
+                showError('Foto dan karakter harus dipilih');
+                return;
+            }
+            
+            await autoGenerateFaceSwap();
+        });
+
+        function showError(message) {
+            const errorAlert = document.getElementById('cameraError');
+            errorAlert.textContent = message;
+            errorAlert.style.display = 'block';
+            
+            setTimeout(() => {
+                errorAlert.style.display = 'none';
+            }, 5000);
+        }
+
+        // Handle page visibility changes
+        document.addEventListener('visibilitychange', function() {
+            if (document.hidden && videoStream) {
+                videoStream.getTracks().forEach(track => track.stop());
+            }
+        });
+
+        // Cleanup when leaving page
+        window.addEventListener('beforeunload', function() {
+            if (videoStream) {
+                videoStream.getTracks().forEach(track => track.stop());
+            }
+        });
+
+
+async function logout() {
+    try {
+        const token = localStorage.getItem('token');
+
+        if (token) {
+            try {
+                await fetch('/api/logout', {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+            } catch (error) {
+                console.log('Logout API not available, proceeding with local logout');
+            }
+        }
+
+        localStorage.removeItem('token');
+
+        const notification = document.getElementById('notification');
+        notification.className = 'notification success';
+        notification.textContent = 'Logout berhasil!';
+        notification.classList.add('show');
+
+        setTimeout(() => {
+            window.location.href = '/login';
+        }, 1000);
+    } catch (error) {
+        console.error('Logout error:', error);
+        localStorage.removeItem('token');
+        window.location.href = '/login';
+    }
+}
+    </script>
+</body>
+</html>

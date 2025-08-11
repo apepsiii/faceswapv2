@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Ambil Foto - AR Photo</title>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet">
+<style>
+    * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Poppins', sans-serif; }
+    body {
+        background: #000;
+        min-height: 100vh;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        overflow: hidden;
+        position: relative;
+    }
+    .logo {
+        position: absolute;
+        top: 20px;
+        left: 20px;
+        width: 120px;
+        z-index: 20;
+    }
+    .camera-container {
+        position: relative;
+        width: 100%;
+        height: 100%;
+        aspect-ratio: 9/16;
+        background: #000;
+        overflow: hidden;
+    }
+    #video, #characterVideo {
+        position: absolute;
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+    }
+    #video {
+        transform: scaleX(-1);
+    }
+    #characterVideo {
+        position: absolute;
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        display: none;
+        z-index: 10;
+    }
+    .overlay {
+        position: absolute;
+        top: 10%;
+        left: 0; right: 0;
+        display: flex;
+        justify-content: center;
+        font-size: 6rem;
+        font-weight: bold;
+        color: #fff;
+        z-index: 10;
+        display: none;
+    }
+    .processing-screen {
+        position: absolute;
+        top: 100px;
+        left: 50%;
+        transform: translateX(-50%);
+        font-size: 3rem;
+        font-weight: bold;
+        color: #fff;
+        z-index: 30;
+        display: none;
+        white-space: nowrap;
+    }
+    .black-background {
+        position: absolute;
+        top: 0; left: 0; right: 0; bottom: 0;
+        background: #000;
+        z-index: 5;
+        display: none;
+    }
+</style>
+</head>
+<body>
+
+<img src="/static/images/logo.png" alt="Logo" class="logo">
+
+<div class="camera-container">
+    <video id="video" autoplay muted playsinline></video>
+    <video id="characterVideo" muted playsinline></video>
+    <div id="blackBackground" class="black-background"></div>
+    <canvas id="canvas" style="display:none;"></canvas>
+    <div id="overlay" class="overlay">READY</div>
+    <div id="processingScreen" class="processing-screen">Foto Anda sedang diproses...</div>
+</div>
+
+<audio id="cekrekSound" src="/static/images/cekrek.mp3" preload="auto"></audio>
+
+<script>
+let videoStream = null;
+const video = document.getElementById("video");
+const characterVideo = document.getElementById("characterVideo");
+const canvas = document.getElementById("canvas");
+const overlay = document.getElementById("overlay");
+const cekrekSound = document.getElementById("cekrekSound");
+const processingScreen = document.getElementById("processingScreen");
+const characterData = localStorage.getItem("selectedCharacter");
+let existingTimer = null;
+
+if (!characterData) {
+    window.location.replace("ar_character.html");
+}
+const selectedCharacter = JSON.parse(characterData);
+
+// Start camera
+navigator.mediaDevices.getUserMedia({ video: true })
+.then(stream => {
+    videoStream = stream;
+    video.srcObject = stream;
+
+    video.addEventListener("loadedmetadata", () => {
+        setTimeout(() => {
+            resetAllState();
+            showReadyThenCountdown();
+        }, 500);
+    }, { once: true }); // hanya trigger sekali
+})
+.catch(() => {
+    alert("Tidak dapat mengakses kamera.");
+});
+
+function resetAllState() {
+    overlay.style.display = "none";
+    overlay.textContent = "";
+
+    if (characterVideo) {
+        characterVideo.pause();
+        characterVideo.currentTime = 0;
+        characterVideo.style.display = "none";
+    }
+
+    if (existingTimer) {
+        clearInterval(existingTimer);
+        existingTimer = null;
+    }
+}
+
+function showReadyThenCountdown() {
+    fetch('/relay?state=on')
+    .then(() => console.log("Lampu HIDUP"))
+    .catch(() => console.log("Gagal Hidupkan lampu"));
+    overlay.textContent = "READY";
+    overlay.style.display = "flex";
+
+    // Lampu nyala bersamaan dengan teks READ
+
+    setTimeout(() => {
+        startCountdown();
+    }, 3500);
+}
+
+function startCountdown() {
+    let count = 5;
+    overlay.textContent = count;
+
+    // Play karakter video sesuai karakter
+    if (selectedCharacter.name.toLowerCase().includes("jumbo")) {
+        characterVideo.src = "/static/ar_assets/thumbnail/bimodanteman.webm";
+        characterVideo.style.display = "block";
+        characterVideo.play();
+    } else if (selectedCharacter.name.toLowerCase().includes("minion")) {
+        characterVideo.src = "/static/ar_assets/thumbnail/minion3biji.webm";
+        characterVideo.style.display = "block";
+        characterVideo.play();
+    }
+
+    existingTimer = setInterval(() => {
+        count--;
+        overlay.textContent = count;
+
+        if (count === 4) {
+            cekrekSound.play();
+        }
+
+        if (count <= 0) {
+            clearInterval(existingTimer);
+            existingTimer = null;
+            overlay.style.display = "none";
+
+            setTimeout(() => {
+                capturePhoto();
+                showProcessingScreen();
+
+                fetch('/relay?state=off')
+                .then(() => console.log("Lampu MATI"))
+                .catch(() => console.log("Gagal matikan lampu"));
+            }, 1000);
+        }
+    }, 1000);
+}
+
+function capturePhoto() {
+    const originalWidth = video.videoWidth;
+    const originalHeight = video.videoHeight;
+
+    let cropWidth = originalWidth;
+    let cropHeight = originalWidth * 16 / 9;
+
+    if (cropHeight > originalHeight) {
+        cropHeight = originalHeight;
+        cropWidth = originalHeight * 9 / 16;
+    }
+
+    const offsetX = (originalWidth - cropWidth) / 2;
+    const offsetY = (originalHeight - cropHeight) / 2;
+
+    canvas.width = cropWidth;
+    canvas.height = cropHeight;
+    const ctx = canvas.getContext("2d");
+
+    ctx.save();
+    ctx.translate(cropWidth, 0);
+    ctx.scale(-1, 1);
+    ctx.drawImage(video, offsetX, offsetY, cropWidth, cropHeight, 0, 0, cropWidth, cropHeight);
+    ctx.restore();
+
+    const characterFrame = new Image();
+    if (selectedCharacter.name.toLowerCase().includes("minion")) {
+        characterFrame.src = "/static/ar_assets/frame_full/minion_frame.png";
+    } else if (selectedCharacter.name.toLowerCase().includes("jumbo")) {
+        characterFrame.src = "/static/ar_assets/frame_full/jumbo_frame.png";
+    } else {
+        characterFrame.src = "/static/images/frame1.png";
+    }
+
+    characterFrame.onload = () => {
+        ctx.drawImage(characterFrame, 0, 0, cropWidth, cropHeight);
+
+        const frontFrame = new Image();
+        frontFrame.src = "/static/images/frame1.png";
+        frontFrame.onload = () => {
+            ctx.drawImage(frontFrame, 0, 0, cropWidth, cropHeight);
+
+            characterVideo.onended = () => {
+                canvas.toBlob(blob => {
+                    const formData = new FormData();
+                    formData.append("webcam", blob, "capture.jpg");
+                    formData.append("template_name", selectedCharacter.name);
+
+                    fetch("/api/ar_upload", {
+                        method: "POST",
+                        body: formData
+                    })
+                    .then(res => res.json())
+                    .then(data => {
+                        if (data.success) {
+                            window.location.replace("ar-result?img=" + encodeURIComponent(data.filename));
+                        } else {
+                            alert("Gagal simpan foto.");
+                        }
+                    })
+                    .catch(() => alert("Koneksi gagal."));
+                }, "image/jpeg", 1.0);
+            };
+        };
+    };
+}
+
+function showProcessingScreen() {
+    video.style.display = "none";
+    processingScreen.style.display = "flex";
+}
+window.addEventListener("beforeunload", () => {
+    if (videoStream) {
+        videoStream.getTracks().forEach(track => track.stop());
+    }
+});
+</script>
+
+</body>
+</html>

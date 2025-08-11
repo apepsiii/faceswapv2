@@ -1,0 +1,93 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+venv/
+
+# C extensions
+*.so
+
+# Distribution / packaging
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Installer logs
+pip-log.txt
+pip-delete-this-directory.txt
+
+# Unit test / coverage reports
+htmlcov/
+.tox/
+.nox/
+.coverage
+.coverage.*
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+.hypothesis/
+.pytest_cache/
+
+# Jupyter Notebook
+.ipynb_checkpoints
+
+# pyenv
+.python-version
+
+# mypy
+.mypy_cache/
+.dmypy.json
+dmypy.json
+
+# Pyre type checker
+.pyre/
+
+# FastAPI/Starlette
+.env
+.env.*
+*.env
+
+# VS Code
+.vscode/
+
+# SQLite database
+face_swap.db
+
+# Logs
+*.log
+
+# Static/Results/Uploads
+static/uploads/
+static/results/
+static/ar_results/
+static/ar_assets/
+static/images/
+static/templates/
+
+# Ignore test outputs
+test_output/
+tmp/
+temp/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Uvicorn reload artifacts
+*.reload
+
+#DO NOT ignore inswapper_128.onnx (model file needed for face swap)
+inswapper_128.onnx

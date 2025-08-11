@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Payment</title>
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+  <style>
+    body, html {
+      margin: 0;
+      padding: 0;
+      height: 100%;
+      font-family: 'Segoe UI', sans-serif;
+      background: linear-gradient(150deg, #0a1f44, #ff1493);
+      color: white;
+    }
+
+    .center-wrapper {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+    }
+
+    .payment-box {
+      border-radius: 15px;
+      padding: 30px 40px;
+      text-align: center;
+      width: 320px;
+      box-shadow: 0 12px 30px rgba(0,0,0,0.2);
+      color: #ffff;
+    }
+
+    .logo-text {
+      font-size: 22px;
+      font-weight: bold;
+      color: #008cff;
+      margin-bottom: 10px;
+    }
+
+    .qris-wrapper {
+      background-color: white;
+      border-radius: 8px;
+      padding: 10px 10px 15px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      margin: 15px 0;
+    }
+
+    .qris-img {
+      width: 240px;
+      height: 240px;
+      object-fit: contain;
+      background-color: white;
+      border: none;
+      padding: 0;
+    }
+
+    .logo-qris {
+      margin-bottom: 5px;
+    }
+
+    .steps {
+      display: flex;
+      justify-content: space-between;
+      margin-top: 20px;
+      font-size: 13px;
+      color: #ffff;
+    }
+
+    .steps div {
+      flex: 1;
+      padding: 0 5px;
+    }
+
+    .steps div span {
+      display: block;
+      font-weight: bold;
+      color: #ffff;
+    }
+ .promo-text b {
+      font-size: 22px;
+      font-weight: bold;
+      color: #d0ff00;
+    }
+    .promo-text {
+      margin-top: 20px;
+      font-size: 14px;
+      color: #ffff;
+      font-weight: bold;
+    }
+
+    .continue-btn {
+      margin-top: 25px;
+      padding: 12px 20px;
+      background: linear-gradient(45deg, #00ffcc, #0099ff);
+      color: #003366;
+      font-weight: bold;
+      text-decoration: none;
+      border-radius: 25px;
+      font-size: 16px;
+      transition: all 0.3s ease;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      box-shadow: 0 8px 25px rgba(0, 255, 204, 0.3);
+    }
+
+    .continue-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 12px 30px rgba(0, 255, 204, 0.4);
+    }
+  </style>
+</head>
+<body>
+  <div class="center-wrapper">
+    <div class="payment-box">
+      <div class="logo-text">
+        <img src="/static/images/logo.png" height="50px" onclick="logout()">
+      </div>
+      <div class="qris-wrapper">
+        <img src="/static/images/Logo_QRIS.png" height="50px">
+        <img class="qris-img" id="qris-img" src="/static/images/loading.gif" alt="QRIS">
+      </div>
+      <div class="steps">
+        <div><span>1</span>Open your<br>payment app</div>
+        <div><span>2</span>Scan this<br>QR code</div>
+        <div><span>3</span>Verify the<br>details</div>
+        <div><span>4</span>Confirm the<br>transaction</div>
+      </div>
+
+      <div class="promo-text">
+        Bayar cuma <b>Rp. 5.000</b> untuk <b>3 KALI</b> foto dan dapatkan foto kece langsung!
+      </div>
+
+      <div class="continue-btn" id="continueBtn" style="display: none;">
+        <i class="fa-solid fa-camera-retro"></i> Lanjut ke Photobooth
+      </div>
+    </div>
+  </div>
+
+  <script>
+let orderId = null;
+  let pollingInterval = null;
+
+  async function loadQRIS() {
+    try {
+      const res = await fetch('/api/qris/token');
+      const data = await res.json();
+
+      if (data.qris_url && data.order_id) {
+        orderId = data.order_id;
+        document.getElementById('qris-img').src = data.qris_url;
+
+        // Mulai polling status pembayaran
+        pollingInterval = setInterval(checkPaymentStatus, 3000);
+      } else {
+        alert("QRIS gagal dimuat");
+      }
+    } catch (error) {
+      alert("QRIS Error: " + error);
+    }
+  }
+// ==== FITUR AUTO REDIRECT 60 DETIK TANPA AKTIVITAS ====
+let idleTimeout;
+const idleLimit = 60000; // 60 detik
+
+function resetIdleTimer() {
+    clearTimeout(idleTimeout);
+    idleTimeout = setTimeout(() => {
+        window.location.replace('/ar_manipulasi');
+    }, idleLimit);
+}
+
+// Event untuk deteksi aktivitas
+['mousemove', 'mousedown', 'keypress', 'touchstart'].forEach(evt => {
+    document.addEventListener(evt, resetIdleTimer);
+});
+
+// Jalankan timer awal
+resetIdleTimer();
+// ======================================================
+  async function checkPaymentStatus() {
+    try {
+      const res = await fetch(`/api/qris/status?order_id=${orderId}`);
+      const data = await res.json();
+
+      if (data.transaction_status === "settlement") {
+        clearInterval(pollingInterval);
+
+        // Tampilkan tombol (opsional)
+        // document.getElementById('continueBtn').style.display = 'inline-flex';
+
+        // Atau langsung redirect
+        window.location.href = "/ar-character";
+      }
+    } catch (error) {
+      console.error("Status check error:", error);
+    }
+  }
+async function logout() {
+    try {
+        const token = localStorage.getItem('token');
+
+        if (token) {
+            try {
+                await fetch('/api/logout', {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+            } catch (error) {
+                console.log('Logout API not available, proceeding with local logout');
+            }
+        }
+
+        localStorage.removeItem('token');
+
+        const notification = document.getElementById('notification');
+        notification.className = 'notification success';
+        notification.textContent = 'Logout berhasil!';
+        notification.classList.add('show');
+
+        setTimeout(() => {
+            window.location.href = '/login';
+        }, 1000);
+    } catch (error) {
+        console.error('Logout error:', error);
+        localStorage.removeItem('token');
+        window.location.href = '/login';
+    }
+}
+  window.onload = loadQRIS;
+  </script>
+</body>
+</html>

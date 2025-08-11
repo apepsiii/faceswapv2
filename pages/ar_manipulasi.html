@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pilih Karakter - Platinum Cineplex</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Poppins', sans-serif; }
+        body {
+            background: linear-gradient(150deg, #0a1f44, #ff1493);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: flex-start; /* Nempel ke atas */
+            color: #fff;
+            text-align: center;
+            padding: 10px; /* Jarak atas & kanan-kiri */
+        }
+        h3 { font-size: 2rem; margin-bottom: 20px; }
+        .menu-grid {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 20px;
+            max-width: 800px;
+            width: 100%;
+            margin-top: 10px;
+            align-items: flex-end;
+        }
+        .menu-item {
+            display: flex;
+            align-items: flex-end;
+            justify-content: center;
+            height: 200px;
+            cursor: pointer;
+        }
+        .menu-item img {
+            max-height: 100%;
+            width: auto;
+            object-fit: contain;
+            border-radius: 15px;
+            display: block;
+            transition: all 0.3s ease;
+            box-shadow: none;
+        }
+        .menu-item img:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 25px rgba(255,255,255,0.4);
+        }
+        .menu-item img.selected {
+            box-shadow: 0 0 20px 5px rgba(255,255,255,0.8);
+            transform: translateY(-3px);
+        }
+    </style>
+</head>
+<body>
+<form class="logout-form">
+        <div class="logo">
+            <img src="/static/images/logo.png" height="50px" onclick="logout()">
+        </div>
+</form>
+<h3>PILIH KARAKTERMU</h3>
+
+<div class="menu-grid" id="characterGrid"></div>
+
+<script> 
+      localStorage.setItem('characterVisitCount', 0);
+if (localStorage.getItem("refreshOnce") === "true") {
+    localStorage.removeItem("refreshOnce");
+    window.location.reload();
+}
+
+const characters = [
+    { name: 'Jumbo.png' },
+    { name: 'minion.png' },
+];
+
+const grid = document.getElementById('characterGrid');
+
+characters.forEach(char => {
+    const imagePath = `/static/ar_assets/thumbnail/${char.name}`;
+    const item = document.createElement('div');
+    item.className = 'menu-item';
+    item.innerHTML = `<img src="${imagePath}" alt="${char.name}">`;
+    
+    const img = item.querySelector('img');
+    img.addEventListener('click', () => {
+        document.querySelectorAll('.menu-item img').forEach(i => i.classList.remove('selected'));
+        img.classList.add('selected');
+        
+        const selectedCharacter = { name: char.name, path: imagePath };
+        localStorage.setItem('selectedCharacter', JSON.stringify(selectedCharacter));
+        window.location.replace('/ar_payment');
+    });
+    
+    grid.appendChild(item);
+});
+
+ function logout() {
+            localStorage.removeItem('token');
+            localStorage.removeItem('user');
+            localStorage.removeItem('selectedCharacter');
+            window.location.replace('/login');
+        }
+</script>
+
+</body>
+</html>

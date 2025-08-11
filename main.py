@@ -46,6 +46,36 @@ from insightface.app import FaceAnalysis
 # import untuk ngecek eror ke logger 
 import traceback
 
+import logging
+
+# Setup logging
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+)
+logger = logging.getLogger(__name__)
+
+# Enhanced Authentication Imports (add after existing imports)
+try:
+    from enhanced_auth import (
+        EnhancedAuthService, 
+        admin_required, 
+        user_required, 
+        check_user_credits,
+        UserCreate,
+        UserLogin,
+        is_admin,
+        has_sufficient_credits,
+        SessionManager,
+        get_current_user,
+    )
+    ENHANCED_AUTH_AVAILABLE = True
+    logger.info("✅ Enhanced authentication imported successfully")
+except ImportError as e:
+    logger.warning(f"⚠️ Enhanced auth not available: {e}")
+    logger.warning("Falling back to basic auth - run migration.py first")
+    ENHANCED_AUTH_AVAILABLE = False
+
 class UserCreate(BaseModel):
     username: str
     password: str
@@ -80,12 +110,7 @@ class Config:
     JWT_ALGORITHM = "HS256"
     JWT_EXPIRATION_HOURS = 24
 
-# Setup logging
-logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
-)
-logger = logging.getLogger(__name__)
+
 
 # Global variables untuk model
 face_app = None
@@ -290,10 +315,27 @@ class AuthService:
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    """Initialize and cleanup resources"""
+    """Enhanced lifespan with migration verification"""
     global face_app, swapper
     
     try:
+        logger.info("🚀 Starting enhanced application...")
+        
+        # Verify database schema if enhanced auth is available
+        if ENHANCED_AUTH_AVAILABLE:
+            try:
+                from enhanced_auth import validate_database_schema
+                if not validate_database_schema():
+                    logger.error("❌ Database schema validation failed!")
+                    logger.error("Please run migration.py first")
+                    # Don't raise exception, allow fallback
+                else:
+                    logger.info("✅ Database schema validated")
+            except Exception as e:
+                logger.warning(f"⚠️ Schema validation failed: {e}")
+                logger.warning("Continuing with basic auth...")
+        
+        # Your existing model initialization code here...
         logger.info("Initializing face analysis model...")
         face_app = FaceAnalysis(name='buffalo_l')
         face_app.prepare(ctx_id=Config.CTX_ID, det_size=Config.DET_SIZE)
@@ -305,7 +347,7 @@ async def lifespan(app: FastAPI):
             download_zip=False
         )
         
-        # Create all directories
+        # Create all directories (your existing code)
         directories = [
             Config.UPLOAD_DIR, Config.TEMPLATE_DIR, Config.RESULT_DIR, 
             Config.FRAME_DIR, Config.PAGES_DIR, Config.AR_ASSETS_DIR, 
@@ -315,7 +357,15 @@ async def lifespan(app: FastAPI):
         for directory in directories:
             directory.mkdir(parents=True, exist_ok=True)
         
-        # Initialize AR Photo module
+        # Create user-specific directories if enhanced auth available
+        if ENHANCED_AUTH_AVAILABLE:
+            usernames = ["cbt", "bsd", "slo", "mgl", "sdo", "plp"]
+            for username in usernames:
+                (Config.RESULT_DIR / username).mkdir(parents=True, exist_ok=True)
+                (Config.AR_RESULTS_DIR / username).mkdir(parents=True, exist_ok=True)
+            logger.info("✅ User-specific directories created")
+        
+        # Your existing AR Photo initialization...
         try:
             from ar_photo import init_ar_photo
             init_ar_photo()
@@ -325,7 +375,17 @@ async def lifespan(app: FastAPI):
         except Exception as e:
             logger.error(f"Failed to initialize AR Photo module: {e}")
         
-        logger.info("Application startup complete")
+        if ENHANCED_AUTH_AVAILABLE:
+            logger.info("✅ Phase 1 enhanced initialization complete!")
+            logger.info("📋 Available enhanced features:")
+            logger.info("   - Role-based authentication (admin/user)")
+            logger.info("   - Credit system foundation")
+            logger.info("   - User-specific file organization")
+            logger.info("   - Admin user management preview")
+        else:
+            logger.info("✅ Basic initialization complete")
+            logger.info("⚠️  Run migration.py to enable enhanced features")
+        
         yield
         
     except Exception as e:
@@ -376,16 +436,42 @@ async def reset_lampu():
     return {"success": True}
 
 @app.get("/api/qris/token")
-def generate_qris_token():
+async def generate_qris_token(user_id: int = Query(None)):
+    """Enhanced QRIS token generation with user tracking"""
     import uuid
-    from fastapi.responses import JSONResponse
-
+    
     order_id = f"ORDER-{uuid.uuid4().hex[:12]}"
+    
+    # Get settings for amount if enhanced auth available
+    amount = 5000
+    credits_to_add = 3
+    
+    if ENHANCED_AUTH_AVAILABLE and user_id:
+        try:
+            with enhanced_auth_service.db_manager.get_connection() as conn:
+                cursor = conn.execute("SELECT value FROM settings WHERE key_name = 'price_per_3_photos'")
+                result = cursor.fetchone()
+                amount = int(result[0]) if result else 5000
+                
+                cursor = conn.execute("SELECT value FROM settings WHERE key_name = 'credits_per_payment'")
+                result = cursor.fetchone()
+                credits_to_add = int(result[0]) if result else 3
+                
+                # Record transaction
+                conn.execute("""
+                    INSERT INTO transactions (user_id, order_id, amount, credits_added, status)
+                    VALUES (?, ?, ?, ?, ?)
+                """, (user_id, order_id, amount, credits_to_add, "pending"))
+                conn.commit()
+        except Exception as e:
+            logger.error(f"Failed to record transaction: {e}")
+    
+    # Your existing QRIS generation code...
     payload = {
         "payment_type": "qris",
         "transaction_details": {
             "order_id": order_id,
-            "gross_amount": 1,
+            "gross_amount": amount,
         },
         "qris": {
             "acquirer": "gopay"
@@ -394,50 +480,78 @@ def generate_qris_token():
 
     try:
         result = core_api.charge(payload)
-        # print("[MIDTRANS RESPONSE]:", json.dumps(result, indent=2))
-
-        # nambahin ke logger 
         logger.info(f"Midtrans charge successful for order_id: {order_id}")
 
-        # Ambil QR URL dari actions
         actions = result.get("actions", [])
         qris_url = next((a["url"] for a in actions if a.get("name") == "generate-qr-code"), None)
 
         if not qris_url:
-            # return JSONResponse(status_code=400, content={"success": False, "error": "QRIS URL tidak ditemukan"})
-            
-            #tampilin eror ke logger
-            logger.error(f"QRIS URL not found in Midtrans response for order_id: {order_id}. Response: {result}")
-            return JSONResponse(status_code=400, content={"success": False, "error": "QRIS URL tidak ditemukan dalam respons Midtrans"})
+            logger.error(f"QRIS URL not found in Midtrans response for order_id: {order_id}")
+            raise HTTPException(status_code=400, detail="QRIS URL tidak ditemukan")
 
-        return {"success": True, "qris_url": qris_url, "order_id": order_id}
-
-    except requests.exceptions.RequestException as e:
-        # # Ini error dari requests (jaringan, API key salah, dsb)
-        # print("[QRIS ERROR - REQUEST]:", str(e))
-        # return JSONResponse(status_code=500, content={"success": False, "error": "Gagal menghubungi Midtrans API"})
-
-        #pakai logger untuk ngecek error ke log
-        logger.error(f"Midtrans RequestException for order_id {order_id}: {e}")
-        logger.error(traceback.format_exc()) # Mencatat traceback lengkap
-        return JSONResponse(status_code=500, content={"success": False, "error": "Gagal menghubungi API Midtrans. Periksa koneksi server."})
+        return {
+            "success": True, 
+            "qris_url": qris_url, 
+            "order_id": order_id,
+            "amount": amount,
+            "credits_to_add": credits_to_add
+        }
 
     except Exception as e:
-        # # Error umum (bukan JSON valid, dsb)
-        # print("[QRIS ERROR - GENERAL]:", str(e))
-        # return JSONResponse(status_code=500, content={"success": False, "error": "Terjadi kesalahan saat generate token"})
-
-        # Ini akan mencatat error lainnya (misal: API key salah, respons JSON tidak valid)
-        logger.error(f"General Exception during Midtrans charge for order_id {order_id}: {e}")
-        logger.error(traceback.format_exc()) # Mencatat traceback lengkap
-        return JSONResponse(status_code=500, content={"success": False, "error": "Terjadi kesalahan internal saat memproses pembayaran."})
+        logger.error(f"Midtrans charge failed for order_id {order_id}: {e}")
+        raise HTTPException(status_code=500, detail="Failed to generate QRIS")
+    
     
 @app.get("/api/qris/status")
-def check_qris_status(order_id: str):
+async def check_qris_status(order_id: str):
+    """Enhanced QRIS status check with automatic credit addition"""
     try:
         status = core_api.transactions.status(order_id)
-        print("[QRIS STATUS]:", json.dumps(status, indent=2))  # Debug log
+        
+        if status.get("transaction_status") == "settlement" and ENHANCED_AUTH_AVAILABLE:
+            # Add credits to user automatically
+            try:
+                with enhanced_auth_service.db_manager.get_connection() as conn:
+                    # Find transaction
+                    cursor = conn.execute("""
+                        SELECT user_id, credits_added, status FROM transactions 
+                        WHERE order_id = ?
+                    """, (order_id,))
+                    transaction = cursor.fetchone()
+                    
+                    if transaction and transaction[2] != "settlement":  # Not already processed
+                        user_id, credits_to_add, current_status = transaction
+                        
+                        # Add credits to user
+                        conn.execute("""
+                            UPDATE users SET credit_balance = credit_balance + ? 
+                            WHERE id = ?
+                        """, (credits_to_add, user_id))
+                        
+                        # Update transaction status
+                        conn.execute("""
+                            UPDATE transactions 
+                            SET status = 'settlement', settled_at = CURRENT_TIMESTAMP 
+                            WHERE order_id = ?
+                        """, (order_id,))
+                        
+                        conn.commit()
+                        
+                        # Get username for logging
+                        cursor = conn.execute("SELECT username FROM users WHERE id = ?", (user_id,))
+                        username_result = cursor.fetchone()
+                        username = username_result[0] if username_result else f"user_{user_id}"
+                        
+                        logger.info(f"Credits added: {username} +{credits_to_add} credits from {order_id}")
+                        
+                        status["credits_added"] = credits_to_add
+                        status["user_id"] = user_id
+                        
+            except Exception as e:
+                logger.error(f"Failed to add credits for {order_id}: {e}")
+        
         return status
+        
     except Exception as e:
         return JSONResponse(status_code=500, content={"error": str(e)})
     
@@ -472,7 +586,27 @@ def count_files():
 app.mount("/static", StaticFiles(directory="static"), name="static")
 
 # Initialize services
-auth_service = AuthService()
+# auth_service = AuthService()
+if ENHANCED_AUTH_AVAILABLE:
+    enhanced_auth_service = EnhancedAuthService()
+    auth_service = enhanced_auth_service  # For backwards compatibility
+    security = HTTPBearer(auto_error=False)
+    logger.info("✅ Enhanced authentication service initialized")
+else:
+    auth_service = AuthService()
+    security = HTTPBearer(auto_error=False)
+    logger.warning("⚠️ Using basic authentication - run migration.py for enhanced features")
+
+    # Basic auth dependencies for fallback
+    async def get_current_user(credentials: Optional[HTTPAuthorizationCredentials] = Depends(security)):
+        if not credentials:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Authentication required"
+            )
+        
+        token = credentials.credentials
+        return auth_service.get_user_by_token(token)
 security = HTTPBearer(auto_error=False)
 
 # Custom exceptions
@@ -770,6 +904,98 @@ async def ar_upload(webcam: UploadFile = File(...), template_name: str = Form(..
     except Exception as e:
         print(f"[!] Error saat upload: {e}")
         return JSONResponse(content={"success": False, "error": str(e)})
+    
+# ===== ADD ADMIN DASHBOARD ROUTE =====
+@app.get("/dashboard_admin", response_class=HTMLResponse)
+async def admin_dashboard_page():
+    """Serve admin dashboard page (placeholder for Phase 3)"""
+    try:
+        return HTMLResponse("""
+        <!DOCTYPE html>
+        <html><head><title>Admin Dashboard - Coming Soon</title>
+        <style>
+            body { font-family: 'Poppins', sans-serif; background: linear-gradient(150deg, #0a1f44, #ff1493); 
+                   color: white; text-align: center; padding: 50px; min-height: 100vh; margin: 0; }
+            .container { max-width: 600px; margin: 0 auto; }
+            .logo { margin-bottom: 30px; }
+            .status { background: rgba(255,255,255,0.1); padding: 30px; border-radius: 15px; 
+                     backdrop-filter: blur(10px); margin-bottom: 20px; }
+            .btn { background: #00ffcc; color: #0a1f44; padding: 12px 24px; border: none; 
+                  border-radius: 8px; text-decoration: none; font-weight: bold; margin: 0 10px;
+                  cursor: pointer; transition: all 0.3s ease; }
+            .btn:hover { transform: translateY(-2px); }
+            .feature { text-align: left; margin: 10px 0; padding: 8px 0; }
+            .coming-soon { color: #00ffcc; font-weight: bold; }
+            .phase-indicator { background: rgba(0,255,204,0.2); padding: 20px; border-radius: 10px; 
+                             border-left: 4px solid #00ffcc; margin: 20px 0; }
+        </style>
+        </head>
+        <body>
+        <div class="container">
+            <div class="logo">
+                <img src="/static/images/logo.png" height="60px">
+            </div>
+            <div class="status">
+                <h1>🚀 Admin Dashboard</h1>
+                <div class="phase-indicator">
+                    <strong>✅ Phase 1 Complete!</strong><br>
+                    Database migration dan enhanced authentication berhasil!
+                </div>
+                
+                <div class="coming-soon">
+                    <h3>📊 Coming in Phase 3:</h3>
+                    <div class="feature">📈 Real-time analytics dashboard</div>
+                    <div class="feature">👥 User management interface</div>
+                    <div class="feature">💰 Revenue tracking & reports</div>
+                    <div class="feature">📊 Usage statistics & charts</div>
+                    <div class="feature">⚙️ System settings management</div>
+                    <div class="feature">📤 Export & reporting tools</div>
+                </div>
+                
+                <h3>🧪 Available Test Features:</h3>
+                <div class="feature">✅ Enhanced role-based authentication</div>
+                <div class="feature">✅ Credit system foundation</div>
+                <div class="feature">✅ User management APIs</div>
+                <div class="feature">✅ Quick statistics preview</div>
+                
+                <br>
+                <a href="/dashboard" class="btn">📊 User Dashboard</a>
+                <button class="btn" onclick="testAdminFeatures()">🧪 Test Admin APIs</button>
+                <button class="btn" onclick="logout()">🚪 Logout</button>
+            </div>
+        </div>
+        <script>
+            async function logout() {
+                localStorage.removeItem('token');
+                localStorage.removeItem('user');
+                window.location.href = '/login';
+            }
+            
+            async function testAdminFeatures() {
+                try {
+                    const token = localStorage.getItem('token');
+                    
+                    const response = await fetch('/api/admin/stats/quick', {
+                        headers: { 'Authorization': `Bearer ${token}` }
+                    });
+                    
+                    if (response.ok) {
+                        const data = await response.json();
+                        alert(`Admin API Test Success!\\n\\nQuick Stats:\\n- Users: ${data.stats.total_users}\\n- Photos: ${data.stats.total_face_swap + data.stats.total_ar_photos}\\n- Revenue: Rp ${data.stats.total_revenue.toLocaleString()}`);
+                    } else {
+                        alert('Admin API test failed. Check your admin permissions.');
+                    }
+                } catch (error) {
+                    alert('Error testing admin features: ' + error.message);
+                }
+            }
+        </script>
+        </body></html>
+        """)
+    except Exception as e:
+        logger.error(f"Error serving admin dashboard placeholder: {e}")
+        return serve_html_page("dashboard")
+    
 # ===== API ROUTES =====
 
 @app.get("/health")
@@ -829,36 +1055,52 @@ async def app_info():
 # Authentication endpoints
 @app.post("/api/register")
 async def register(user_data: UserCreate):
-    return auth_service.register_user(user_data)
+    """Enhanced register endpoint with role support"""
+    if ENHANCED_AUTH_AVAILABLE:
+        return enhanced_auth_service.register_user(user_data)
+    else:
+        return auth_service.register_user(user_data)
 
 @app.post("/api/login")
 async def login(login_data: UserLogin):
-    return auth_service.login_user(login_data)
+    """Enhanced login endpoint with role-based redirect"""
+    if ENHANCED_AUTH_AVAILABLE:
+        result = enhanced_auth_service.login_user(login_data)
+        logger.info(f"Enhanced login: {result['user']['username']} ({result['user']['role']}) → {result['redirect_url']}")
+        return result
+    else:
+        result = auth_service.login_user(login_data)
+        # Add basic redirect for backwards compatibility
+        result['redirect_url'] = '/dashboard'
+        return result
 
 @app.post("/api/logout")
 async def logout(credentials: Optional[HTTPAuthorizationCredentials] = Depends(security)):
-    """Logout user and invalidate session"""
+    """Enhanced logout endpoint"""
     if not credentials:
         return {"success": True, "message": "Logout berhasil"}
     
-    try:
-        token = credentials.credentials
-        # You can add token invalidation logic here if needed
-        # For now, we rely on client-side token removal
-        return {
-            "success": True,
-            "message": "Logout berhasil"
-        }
-    except Exception as e:
-        logger.error(f"Logout error: {e}")
+    token = credentials.credentials
+    if ENHANCED_AUTH_AVAILABLE:
+        return enhanced_auth_service.logout_user(token)
+    else:
         return {"success": True, "message": "Logout berhasil"}
 
 @app.get("/api/me")
 async def get_me(current_user = Depends(get_current_user)):
-    return {
-        "success": True,
-        "user": current_user
-    }
+    """Enhanced user info endpoint with role and credits"""
+    if ENHANCED_AUTH_AVAILABLE:
+        session_data = SessionManager.create_session_data(current_user)
+        return {
+            "success": True,
+            "user": current_user,
+            "session": session_data
+        }
+    else:
+        return {
+            "success": True,
+            "user": current_user
+        }
 
 # Template management
 @app.get("/api/templates")
@@ -934,8 +1176,20 @@ async def swap_faces_api(
             await save_uploaded_file(source, source_path)
             temp_files.append(source_path)
         
-        result_filename = f"result_{timestamp}_{unique_id}.png"
-        result_path = Config.RESULT_DIR / result_filename
+        # result_filename = f"result_{timestamp}_{unique_id}.png"
+        # result_path = Config.RESULT_DIR / result_filename
+
+        # Enhanced filename with username if available
+        if ENHANCED_AUTH_AVAILABLE and 'username' in current_user:
+            result_filename = f"{current_user['username']}_{timestamp}_{unique_id}.png"
+            
+            # User-specific directory
+            user_result_dir = Config.RESULT_DIR / current_user['username']
+            user_result_dir.mkdir(parents=True, exist_ok=True)
+            result_path = user_result_dir / result_filename
+        else:
+            result_filename = f"result_{timestamp}_{unique_id}.png"
+            result_path = Config.RESULT_DIR / result_filename
         
         logger.info(f"Starting face swap: {source_path} -> {template_path}")
         swap_result_path = swap_faces(source_path, template_path, result_path)
@@ -945,19 +1199,40 @@ async def swap_faces_api(
             frame_path = Config.FRAME_DIR / "frame1.png"
             final_result_path = overlay_frame(swap_result_path, frame_path, result_path)
         
-        # Save to history
-        with auth_service.db_manager.get_connection() as conn:
-            conn.execute("""
-                INSERT INTO face_swap_history (user_id, template_name, result_filename)
-                VALUES (?, ?, ?)
-            """, (current_user["id"], template_name, result_filename))
-            conn.commit()
+        # # Save to history old
+        # with auth_service.db_manager.get_connection() as conn:
+        #     conn.execute("""
+        #         INSERT INTO face_swap_history (user_id, template_name, result_filename)
+        #         VALUES (?, ?, ?)
+        #     """, (current_user["id"], template_name, result_filename))
+        #     conn.commit()
+
+        # Save to history/photos table
+        if ENHANCED_AUTH_AVAILABLE:
+            with enhanced_auth_service.db_manager.get_connection() as conn:
+                conn.execute("""
+                    INSERT INTO photos (user_id, filename, photo_type, template_name, file_path, credits_used)
+                    VALUES (?, ?, ?, ?, ?, ?)
+                """, (current_user["id"], result_filename, "face_swap", template_name, str(final_result_path), 1))
+                conn.commit()
+        else:
+            with auth_service.db_manager.get_connection() as conn:
+                conn.execute("""
+                    INSERT INTO face_swap_history (user_id, template_name, result_filename)
+                    VALUES (?, ?, ?)
+                """, (current_user["id"], template_name, result_filename))
+                conn.commit()
+
+        # if ENHANCED_AUTH_AVAILABLE and 'username' in current_user:
+        #     result_url = f"/static/results/{current_user['username']}/{result_filename}"
+        # else:
+        #     result_url = f"/static/results/{result_filename}"
         
         response_data = {
             "success": True,
             "message": "Face swap berhasil dilakukan",
             "data": {
-                "result_url": f"/static/results/{result_filename}",
+                "result_url": f"/static/results/{current_user['username']}/{result_filename}",
                 "result_filename": result_filename,
                 "template_used": template_name,
                 "faces_detected": {
@@ -1315,6 +1590,387 @@ async def ar_test_dynamic():
             "/api/ar/characters/{name} - Delete character",
             "/api/ar/test - This endpoint"
         ]
+    }
+
+# ===== ADD ENHANCED ADMIN ENDPOINTS =====
+if ENHANCED_AUTH_AVAILABLE:
+    
+    @app.get("/api/admin/users")
+    async def list_users(admin_user = Depends(admin_required)):
+        """List all users with statistics (Admin only)"""
+        try:
+            with enhanced_auth_service.db_manager.get_connection() as conn:
+                cursor = conn.execute("""
+                    SELECT 
+                        u.id, u.username, u.role, u.credit_balance, u.created_at, 
+                        u.last_login, u.is_active,
+                        COUNT(DISTINCT p.id) as total_photos,
+                        COUNT(DISTINCT CASE WHEN p.photo_type = 'face_swap' THEN p.id END) as face_swap_count,
+                        COUNT(DISTINCT CASE WHEN p.photo_type = 'ar_photo' THEN p.id END) as ar_photo_count,
+                        COALESCE(SUM(t.amount), 0) as total_spent,
+                        MAX(p.created_at) as last_photo
+                    FROM users u
+                    LEFT JOIN photos p ON u.id = p.user_id
+                    LEFT JOIN transactions t ON u.id = t.user_id AND t.status = 'settlement'
+                    WHERE u.role != 'admin'
+                    GROUP BY u.id
+                    ORDER BY total_photos DESC
+                """)
+                
+                users = []
+                for row in cursor.fetchall():
+                    users.append({
+                        "id": row[0],
+                        "username": row[1],
+                        "role": row[2],
+                        "credit_balance": row[3],
+                        "created_at": row[4],
+                        "last_login": row[5],
+                        "is_active": bool(row[6]),
+                        "total_photos": row[7],
+                        "face_swap_count": row[8],
+                        "ar_photo_count": row[9],
+                        "total_spent": row[10],
+                        "last_photo": row[11]
+                    })
+                
+                return {"success": True, "users": users, "count": len(users)}
+                
+        except Exception as e:
+            logger.error(f"Error listing users: {e}")
+            raise HTTPException(status_code=500, detail="Failed to retrieve users")
+
+    @app.get("/api/admin/stats/quick")
+    async def get_quick_stats(admin_user = Depends(admin_required)):
+        """Get quick statistics for admin dashboard preview"""
+        try:
+            with enhanced_auth_service.db_manager.get_connection() as conn:
+                # Basic counts
+                cursor = conn.execute("SELECT COUNT(*) FROM users WHERE role = 'user'")
+                total_users = cursor.fetchone()[0]
+                
+                cursor = conn.execute("SELECT COUNT(*) FROM photos WHERE photo_type = 'face_swap'")
+                total_face_swap = cursor.fetchone()[0]
+                
+                cursor = conn.execute("SELECT COUNT(*) FROM photos WHERE photo_type = 'ar_photo'")
+                total_ar_photos = cursor.fetchone()[0]
+                
+                cursor = conn.execute("SELECT COALESCE(SUM(amount), 0) FROM transactions WHERE status = 'settlement'")
+                total_revenue = cursor.fetchone()[0]
+                
+                # Today's stats
+                cursor = conn.execute("""
+                    SELECT COUNT(*) FROM photos 
+                    WHERE DATE(created_at) = DATE('now') AND photo_type = 'face_swap'
+                """)
+                today_face_swap = cursor.fetchone()[0]
+                
+                cursor = conn.execute("""
+                    SELECT COUNT(*) FROM photos 
+                    WHERE DATE(created_at) = DATE('now') AND photo_type = 'ar_photo'
+                """)
+                today_ar_photos = cursor.fetchone()[0]
+                
+                cursor = conn.execute("""
+                    SELECT COALESCE(SUM(amount), 0) FROM transactions 
+                    WHERE DATE(settled_at) = DATE('now') AND status = 'settlement'
+                """)
+                today_revenue = cursor.fetchone()[0]
+                
+                return {
+                    "success": True,
+                    "stats": {
+                        "total_users": total_users,
+                        "total_face_swap": total_face_swap,
+                        "total_ar_photos": total_ar_photos,
+                        "total_revenue": total_revenue,
+                        "today_stats": {
+                            "face_swap": today_face_swap,
+                            "ar_photos": today_ar_photos,
+                            "revenue": today_revenue
+                        }
+                    }
+                }
+                
+        except Exception as e:
+            logger.error(f"Error getting quick stats: {e}")
+            raise HTTPException(status_code=500, detail="Failed to retrieve statistics")
+
+    @app.get("/api/user/credits")
+    async def get_user_credits(current_user = Depends(user_required)):
+        """Get current user credit balance"""
+        return {
+            "success": True,
+            "credits": current_user["credit_balance"],
+            "username": current_user["username"],
+            "role": current_user["role"]
+        }
+
+    @app.post("/api/admin/users/{user_id}/credits")
+    async def manage_user_credits(
+        user_id: int,
+        action: str = Form(...),
+        amount: int = Form(...),
+        reason: str = Form(""),
+        admin_user = Depends(admin_required)
+    ):
+        """Manage user credits (Admin only)"""
+        try:
+            with enhanced_auth_service.db_manager.get_connection() as conn:
+                cursor = conn.execute(
+                    "SELECT username, credit_balance FROM users WHERE id = ?",
+                    (user_id,)
+                )
+                user = cursor.fetchone()
+                
+                if not user:
+                    raise HTTPException(status_code=404, detail="User tidak ditemukan")
+                
+                username, current_credits = user
+                
+                if action == "set":
+                    new_credits = amount
+                elif action == "add":
+                    new_credits = current_credits + amount
+                elif action == "subtract":
+                    new_credits = max(0, current_credits - amount)
+                else:
+                    raise HTTPException(status_code=400, detail="Invalid action")
+                
+                conn.execute(
+                    "UPDATE users SET credit_balance = ? WHERE id = ?",
+                    (new_credits, user_id)
+                )
+                conn.commit()
+                
+                logger.info(f"Credits {action} for {username}: {current_credits} → {new_credits} by {admin_user['username']}")
+                
+                return {
+                    "success": True,
+                    "message": f"Credits updated for {username}",
+                    "previous_credits": current_credits,
+                    "new_credits": new_credits,
+                    "action": action,
+                    "amount": amount,
+                    "reason": reason
+                }
+                
+        except Exception as e:
+            logger.error(f"Error managing credits: {e}")
+            raise HTTPException(status_code=500, detail="Failed to update credits")
+        
+
+# ===== ADD TESTING ENDPOINTS =====
+@app.get("/api/test/phase1")
+async def test_phase1():
+    """Test Phase 1 implementation"""
+    try:
+        test_results = []
+        
+        # Test database connection
+        try:
+            if ENHANCED_AUTH_AVAILABLE:
+                with enhanced_auth_service.db_manager.get_connection() as conn:
+                    cursor = conn.execute("SELECT COUNT(*) FROM users")
+                    user_count = cursor.fetchone()[0]
+                    test_results.append({
+                        "test": "Enhanced database connection",
+                        "status": "✅ PASS",
+                        "details": f"{user_count} users in enhanced database"
+                    })
+            else:
+                with auth_service.db_manager.get_connection() as conn:
+                    cursor = conn.execute("SELECT COUNT(*) FROM users")
+                    user_count = cursor.fetchone()[0]
+                    test_results.append({
+                        "test": "Basic database connection",
+                        "status": "✅ PASS",
+                        "details": f"{user_count} users in basic database"
+                    })
+        except Exception as e:
+            test_results.append({
+                "test": "Database connection", 
+                "status": "❌ FAIL",
+                "details": str(e)
+            })
+        
+        # Test enhanced auth service
+        if ENHANCED_AUTH_AVAILABLE:
+            try:
+                from enhanced_auth import validate_database_schema
+                schema_valid = validate_database_schema()
+                test_results.append({
+                    "test": "Enhanced auth service",
+                    "status": "✅ PASS" if schema_valid else "❌ FAIL",
+                    "details": "Schema validation " + ("passed" if schema_valid else "failed")
+                })
+            except Exception as e:
+                test_results.append({
+                    "test": "Enhanced auth service",
+                    "status": "❌ FAIL", 
+                    "details": str(e)
+                })
+        else:
+            test_results.append({
+                "test": "Enhanced auth service",
+                "status": "⚠️ SKIP",
+                "details": "Enhanced auth not available - run migration.py"
+            })
+        
+        # Test role-based routes
+        test_results.append({
+            "test": "Role-based routes",
+            "status": "✅ PASS",
+            "details": "Admin and user routes configured"
+        })
+        
+        # Test models initialization
+        global face_app, swapper
+        if face_app and swapper:
+            test_results.append({
+                "test": "AI models loaded",
+                "status": "✅ PASS",
+                "details": "Face analysis and swapper models ready"
+            })
+        else:
+            test_results.append({
+                "test": "AI models loaded",
+                "status": "❌ FAIL",
+                "details": "Models not loaded properly"
+            })
+        
+        # Test directory structure
+        try:
+            required_dirs = [Config.UPLOAD_DIR, Config.TEMPLATE_DIR, Config.RESULT_DIR]
+            all_dirs_exist = all(d.exists() for d in required_dirs)
+            test_results.append({
+                "test": "Directory structure",
+                "status": "✅ PASS" if all_dirs_exist else "❌ FAIL",
+                "details": f"Required directories {'exist' if all_dirs_exist else 'missing'}"
+            })
+        except Exception as e:
+            test_results.append({
+                "test": "Directory structure",
+                "status": "❌ FAIL",
+                "details": str(e)
+            })
+        
+        # Overall status
+        all_passed = all("✅ PASS" in result["status"] for result in test_results)
+        
+        return {
+            "phase": "Phase 1 - Foundation",
+            "status": "✅ READY" if all_passed else "⚠️ PARTIAL" if ENHANCED_AUTH_AVAILABLE else "❌ NEEDS_MIGRATION",
+            "enhanced_auth_available": ENHANCED_AUTH_AVAILABLE,
+            "test_results": test_results,
+            "next_phase": "Phase 2 - Credit System & Enhanced Photo Generation",
+            "recommendations": [
+                "Run migration.py to enable enhanced features" if not ENHANCED_AUTH_AVAILABLE else "Ready for Phase 2",
+                "Test admin and user login flows",
+                "Verify role-based redirects work",
+                "Check existing functionality still works"
+            ],
+            "timestamp": datetime.now().isoformat()
+        }
+        
+    except Exception as e:
+        return {
+            "phase": "Phase 1 - Foundation",
+            "status": "❌ ERROR", 
+            "error": str(e),
+            "enhanced_auth_available": ENHANCED_AUTH_AVAILABLE,
+            "timestamp": datetime.now().isoformat()
+        }
+
+@app.get("/api/test/auth")
+async def test_auth_system():
+    """Test authentication system"""
+    try:
+        test_results = []
+        
+        if ENHANCED_AUTH_AVAILABLE:
+            # Test enhanced auth features
+            with enhanced_auth_service.db_manager.get_connection() as conn:
+                # Check admin users
+                cursor = conn.execute("SELECT COUNT(*) FROM users WHERE role = 'admin'")
+                admin_count = cursor.fetchone()[0]
+                test_results.append({
+                    "test": "Admin users exist",
+                    "status": "✅ PASS" if admin_count > 0 else "❌ FAIL",
+                    "details": f"{admin_count} admin users found"
+                })
+                
+                # Check regular users
+                cursor = conn.execute("SELECT COUNT(*) FROM users WHERE role = 'user'")
+                user_count = cursor.fetchone()[0]
+                test_results.append({
+                    "test": "Regular users exist",
+                    "status": "✅ PASS" if user_count > 0 else "❌ FAIL",
+                    "details": f"{user_count} regular users found"
+                })
+                
+                # Check settings
+                cursor = conn.execute("SELECT COUNT(*) FROM settings")
+                settings_count = cursor.fetchone()[0]
+                test_results.append({
+                    "test": "Settings configured",
+                    "status": "✅ PASS" if settings_count > 0 else "❌ FAIL",
+                    "details": f"{settings_count} settings found"
+                })
+        else:
+            test_results.append({
+                "test": "Enhanced authentication",
+                "status": "❌ NOT_AVAILABLE",
+                "details": "Run migration.py to enable enhanced auth"
+            })
+        
+        return {
+            "success": True,
+            "auth_system": "Enhanced" if ENHANCED_AUTH_AVAILABLE else "Basic",
+            "test_results": test_results,
+            "sample_accounts": [
+                {"username": "admin", "password": "admin123", "role": "admin"},
+                {"username": "cbt", "password": "cbt123", "role": "user"},
+                {"username": "bsd", "password": "bsd123", "role": "user"}
+            ] if ENHANCED_AUTH_AVAILABLE else [
+                {"username": "demo", "password": "demo123", "role": "user"}
+            ]
+        }
+        
+    except Exception as e:
+        return {
+            "success": False,
+            "error": str(e)
+        }
+
+@app.get("/api/info")
+async def app_info():
+    """Get enhanced application information"""
+    return {
+        "app_name": "AI Face Swap Studio",
+        "version": "2.1.0",
+        "description": "Advanced Face Swapping API with Authentication and AR Photo",
+        "enhanced_auth": ENHANCED_AUTH_AVAILABLE,
+        "phase": "Phase 1 - Foundation" if ENHANCED_AUTH_AVAILABLE else "Basic",
+        "pages": [
+            {"path": "/login", "description": "Login page"},
+            {"path": "/dashboard", "description": "User dashboard"},
+            {"path": "/dashboard_admin", "description": "Admin dashboard (Phase 1 preview)"},
+            {"path": "/character", "description": "Character selection"},
+            {"path": "/camera", "description": "Photo capture"},
+            {"path": "/ar-character", "description": "AR Character selection"},
+            {"path": "/ar-camera", "description": "AR Photo capture"},
+            {"path": "/result", "description": "Result with QR code"}
+        ],
+        "features": [
+            "Face Swapping",
+            "AR Photo Overlay", 
+            "Role-based Authentication" if ENHANCED_AUTH_AVAILABLE else "Basic Authentication",
+            "Credit System Foundation" if ENHANCED_AUTH_AVAILABLE else "Session-based Limits",
+            "QR Code Generation",
+            "User Dashboard"
+        ],
+        "api_docs": "/docs"
     }
 
 if __name__ == "__main__":

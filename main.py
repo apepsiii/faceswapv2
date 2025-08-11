@@ -1,4 +1,4 @@
-from fastapi import FastAPI, UploadFile, File, Form, HTTPException, status, Depends
+from fastapi import FastAPI, UploadFile, Query, File, Form, HTTPException, status, Depends
 from fastapi.responses import JSONResponse, HTMLResponse, FileResponse
 from fastapi.responses import RedirectResponse
 from fastapi.staticfiles import StaticFiles
@@ -312,6 +312,15 @@ class AuthService:
                 "created_at": user[2],
                 "last_login": user[3]
             }
+        
+async def check_user_credits(current_user = Depends(get_current_user)):
+    """Middleware untuk check credit user sebelum generate foto"""
+    if current_user["credit_balance"] < 1:
+        raise HTTPException(
+            status_code=402,  # Payment Required
+            detail="Credit tidak mencukupi. Silakan lakukan pembayaran terlebih dahulu."
+        )
+    return current_user
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -443,7 +452,7 @@ async def generate_qris_token(user_id: int = Query(None)):
     order_id = f"ORDER-{uuid.uuid4().hex[:12]}"
     
     # Get settings for amount if enhanced auth available
-    amount = 5000
+    amount = 1
     credits_to_add = 3
     
     if ENHANCED_AUTH_AVAILABLE and user_id:
@@ -504,29 +513,30 @@ async def generate_qris_token(user_id: int = Query(None)):
     
 @app.get("/api/qris/status")
 async def check_qris_status(order_id: str):
-    """Enhanced QRIS status check with automatic credit addition"""
+    """Check QRIS status dan auto-add credits saat settlement"""
     try:
-        status = core_api.transactions.status(order_id)
+        status_result = core_api.transactions.status(order_id)
+        logger.info(f"QRIS status check for {order_id}: {status_result.get('transaction_status')}")
         
-        if status.get("transaction_status") == "settlement" and ENHANCED_AUTH_AVAILABLE:
-            # Add credits to user automatically
+        # Auto-add credits jika settlement
+        if status_result.get("transaction_status") == "settlement":
             try:
-                with enhanced_auth_service.db_manager.get_connection() as conn:
-                    # Find transaction
+                with auth_service.db_manager.get_connection() as conn:
+                    # Find pending transaction
                     cursor = conn.execute("""
-                        SELECT user_id, credits_added, status FROM transactions 
-                        WHERE order_id = ?
+                        SELECT user_id, credits_added FROM transactions 
+                        WHERE order_id = ? AND status = 'pending'
                     """, (order_id,))
                     transaction = cursor.fetchone()
                     
-                    if transaction and transaction[2] != "settlement":  # Not already processed
-                        user_id, credits_to_add, current_status = transaction
+                    if transaction:
+                        user_id, credits_added = transaction
                         
                         # Add credits to user
                         conn.execute("""
                             UPDATE users SET credit_balance = credit_balance + ? 
                             WHERE id = ?
-                        """, (credits_to_add, user_id))
+                        """, (credits_added, user_id))
                         
                         # Update transaction status
                         conn.execute("""
@@ -536,23 +546,20 @@ async def check_qris_status(order_id: str):
                         """, (order_id,))
                         
                         conn.commit()
+                        logger.info(f"Credits added: {credits_added} credits to user {user_id}")
                         
-                        # Get username for logging
-                        cursor = conn.execute("SELECT username FROM users WHERE id = ?", (user_id,))
-                        username_result = cursor.fetchone()
-                        username = username_result[0] if username_result else f"user_{user_id}"
-                        
-                        logger.info(f"Credits added: {username} +{credits_to_add} credits from {order_id}")
-                        
-                        status["credits_added"] = credits_to_add
-                        status["user_id"] = user_id
+                        # Add settlement info to response
+                        status_result["credits_added"] = credits_added
+                        status_result["user_id"] = user_id
                         
             except Exception as e:
-                logger.error(f"Failed to add credits for {order_id}: {e}")
+                logger.error(f"Failed to add credits for order {order_id}: {e}")
+                # Don't fail the status check if credit addition fails
         
-        return status
+        return status_result
         
     except Exception as e:
+        logger.error(f"QRIS status check error: {e}")
         return JSONResponse(status_code=500, content={"error": str(e)})
     
 @app.post("/api/qris/mock-callback")

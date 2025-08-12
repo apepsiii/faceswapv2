@@ -41,12 +41,15 @@ from midtrans_config import core_api
 class Config:
     UPLOAD_DIR = Path("static/uploads")
     TEMPLATE_DIR = Path("static/templates")
-    RESULT_DIR = Path("static/results")
+    RESULT_DIR = Path("static/results")  # Face swap results
+    AR_RESULTS_DIR = Path("static/ar_results")  # AR photo results
     FRAME_DIR = Path("static/images")
     PAGES_DIR = Path("pages")
+    
+    # AR Photo specific
     AR_ASSETS_DIR = Path("static/ar_assets")
     COUNTDOWN_DIR = Path("static/ar_assets/countdown")
-    AR_RESULTS_DIR = Path("static/ar_results")
+    THUMBNAIL_DIR = Path("static/ar_assets/thumbnail")
     
     MAX_FILE_SIZE = 10 * 1024 * 1024  # 10MB
     ALLOWED_EXTENSIONS = {'.jpg', '.jpeg', '.png', '.bmp'}
@@ -407,13 +410,26 @@ async def lifespan(app: FastAPI):
         
         # Create all directories
         directories = [
-            Config.UPLOAD_DIR, Config.TEMPLATE_DIR, Config.RESULT_DIR, 
-            Config.FRAME_DIR, Config.PAGES_DIR, Config.AR_ASSETS_DIR, 
-            Config.COUNTDOWN_DIR, Config.AR_RESULTS_DIR
+            Config.UPLOAD_DIR, 
+            Config.TEMPLATE_DIR, 
+            Config.RESULT_DIR,
+            Config.AR_RESULTS_DIR, 
+            Config.FRAME_DIR, 
+            Config.PAGES_DIR, 
+            Config.AR_ASSETS_DIR, 
+            Config.COUNTDOWN_DIR, 
+            Config.AR_RESULTS_DIR
         ]
         
         for directory in directories:
             directory.mkdir(parents=True, exist_ok=True)
+            logger.info(f"Directory created/verified: {directory}")
+        
+        sample_users = ['cbt', 'bsd', 'slo', 'mgl', 'sdo', 'plp', 'admin']
+        for username in sample_users:
+            user_ar_dir = Config.AR_RESULTS_DIR / username
+            user_ar_dir.mkdir(parents=True, exist_ok=True)
+            logger.info(f"AR user directory created: {user_ar_dir}")
         
         logger.info("Application startup complete")
         yield
@@ -502,6 +518,31 @@ async def check_user_credits(current_user = Depends(get_current_user)):
             status_code=status.HTTP_402_PAYMENT_REQUIRED,
             detail="Insufficient credits. Please make a payment."
         )
+    return current_user
+
+# Credit checking middleware
+async def check_user_credits_ar(current_user = Depends(get_current_user)):
+    """Middleware to check if user has enough credits for AR photo"""
+    # Admin bypass credit check
+    if current_user.get("role") == "admin":
+        logger.info(f"Admin {current_user['username']} accessing AR - credits bypassed")
+        return current_user
+    
+    # Check user credits
+    credit_balance = current_user.get("credit_balance", 0)
+    if credit_balance < 1:
+        logger.warning(f"User {current_user['username']} insufficient credits: {credit_balance}")
+        raise HTTPException(
+            status_code=402,
+            detail={
+                "error": "Insufficient credits",
+                "message": "You need at least 1 credit to take an AR photo",
+                "credits_remaining": credit_balance,
+                "redirect_to": "/ar_payment"
+            }
+        )
+    
+    logger.info(f"User {current_user['username']} has {credit_balance} credits - AR access granted")
     return current_user
 
 # =============================================
@@ -636,69 +677,71 @@ def swap_faces(src_path: Path, dst_path: Path, output_path: Path) -> Path:
 
 @app.get("/", response_class=HTMLResponse)
 async def root():
-    return HTMLResponse("""
-    <!DOCTYPE html>
-    <html><head><title>AI Face Swap Studio</title>
-    <meta http-equiv="refresh" content="0; url=/login">
-    </head>
-    <body>
-    <p>Redirecting to <a href="/login">Login Page</a>...</p>
-    </body></html>
-    """)
+    """Redirect to login page"""
+    return RedirectResponse(url="/login")
 
 @app.get("/login", response_class=HTMLResponse)
 async def login_page():
+    """Serve login page"""
     return serve_html_page("login")
 
 @app.get("/dashboard", response_class=HTMLResponse)
 async def dashboard_page():
+    """Serve main dashboard/menu page"""
     return serve_html_page("dashboard")
 
-@app.get("/dashboard_admin", response_class=HTMLResponse)
-async def admin_dashboard_page():
-    return serve_html_page("dashboard_admin")
+# Face Swap Flow
+@app.get("/manipulasi", response_class=HTMLResponse)
+async def manipulasi_page():
+    """Serve character selection for face swap"""
+    return serve_html_page("manipulasi")
 
 @app.get("/character", response_class=HTMLResponse)
 async def character_page():
-    return serve_html_page("character")
+    """Serve character page (legacy, redirect to manipulasi)"""
+    return RedirectResponse(url="/manipulasi")
 
 @app.get("/camera", response_class=HTMLResponse)
 async def camera_page():
-    global lampu_status
-    lampu_status = "on"
+    """Serve camera page for face swap"""
     return serve_html_page("camera")
-
-@app.get("/result", response_class=HTMLResponse)
-async def result_page():
-    return serve_html_page("result")
-
-@app.get("/manipulasi", response_class=HTMLResponse)
-async def manipulasi_page():
-    return serve_html_page("manipulasi")
 
 @app.get("/payment", response_class=HTMLResponse)
 async def payment_page():
+    """Serve payment page for face swap"""
     return serve_html_page("payment")
 
-@app.get("/ar_manipulasi", response_class=HTMLResponse)
-async def ar_manipulasi_page():
-    return serve_html_page("ar_manipulasi")
-
+# AR Photo Flow (Clean)
 @app.get("/ar-character", response_class=HTMLResponse)
 async def ar_character_page():
+    """Serve AR character selection with credit checking"""
     return serve_html_page("ar_character")
 
 @app.get("/ar_camera", response_class=HTMLResponse)
 async def ar_camera_page():
+    """Serve AR camera page"""
     return serve_html_page("ar_camera")
 
 @app.get("/ar_payment", response_class=HTMLResponse)
 async def ar_payment_page():
+    """Serve AR payment page"""
     return serve_html_page("ar_payment")
+
+# Legacy redirects (untuk backward compatibility)
+@app.get("/ar_manipulasi", response_class=HTMLResponse)
+async def ar_manipulasi_redirect():
+    """Redirect legacy AR manipulasi to clean flow"""
+    return RedirectResponse(url="/ar-character")
 
 @app.get("/ar-result", response_class=HTMLResponse)
 async def ar_result_page():
+    """Serve AR result page"""
     return serve_html_page("ar_result")
+
+@app.get("/result", response_class=HTMLResponse)
+async def result_page():
+    """Serve result page"""
+    return serve_html_page("result")
 
 # =============================================
 # AUTHENTICATION API ROUTES
@@ -718,7 +761,17 @@ async def logout(credentials: Optional[HTTPAuthorizationCredentials] = Depends(s
 
 @app.get("/api/me")
 async def get_me(current_user = Depends(get_current_user)):
-    return {"success": True, "user": current_user}
+    return {
+        "success": True,
+        "user": {
+            "id": current_user["id"],
+            "username": current_user["username"],
+            "role": current_user.get("role", "user"),
+            "credit_balance": current_user.get("credit_balance", 0),
+            "created_at": current_user["created_at"],
+            "last_login": current_user["last_login"]
+        }
+    }
 
 # =============================================
 # PAYMENT API ROUTES
@@ -1058,46 +1111,97 @@ async def ar_characters_dynamic():
 async def ar_upload(
     webcam: UploadFile = File(...), 
     template_name: str = Form(...),
-    current_user = Depends(get_current_user_optional)
+    current_user = Depends(get_current_user)
 ):
-    """Upload AR photo with optional user tracking"""
+    """Upload AR photo with credit deduction and user-specific folder"""
     try:
-        # Clean template name
-        clean_template_name = os.path.splitext(template_name)[0]
-
+        # Check credits (skip for admin)
+        if current_user.get("role") != "admin":
+            if current_user.get("credit_balance", 0) < 1:
+                return JSONResponse(
+                    status_code=402,
+                    content={
+                        "success": False, 
+                        "error": "Insufficient credits. Please make a payment.",
+                        "credits_remaining": current_user.get("credit_balance", 0)
+                    }
+                )
+        
+        # Setup user-specific folder dengan Config yang benar
+        username = current_user["username"]
+        user_ar_dir = Config.AR_RESULTS_DIR / username
+        user_ar_dir.mkdir(parents=True, exist_ok=True)
+        
         # Generate unique filename
-        if current_user:
-            username = current_user["username"]
-            filename = f"{username}_{uuid.uuid4().hex}_{clean_template_name}.png"
-            
-            # Create user-specific directory
-            user_result_dir = Config.AR_RESULTS_DIR / username
-            user_result_dir.mkdir(parents=True, exist_ok=True)
-            save_path = user_result_dir / filename
-        else:
-            filename = f"{uuid.uuid4().hex}_{clean_template_name}.png"
-            save_path = Config.AR_RESULTS_DIR / filename
-
+        clean_template_name = os.path.splitext(template_name)[0]
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        unique_id = str(uuid.uuid4())[:8]
+        filename = f"{username}_{timestamp}_{unique_id}_{clean_template_name}.png"
+        save_path = user_ar_dir / filename
+        
         # Save file
         with save_path.open("wb") as buffer:
             shutil.copyfileobj(webcam.file, buffer)
-
-        # Record in database if user is authenticated
-        if current_user:
+        
+        # Deduct credit and record photo (skip for admin)
+        credits_used = 0
+        if current_user.get("role") != "admin":
+            credits_used = 1
+            
             with auth_service.db_manager.get_connection() as conn:
+                # Deduct credit
+                conn.execute(
+                    "UPDATE users SET credit_balance = credit_balance - 1 WHERE id = ?",
+                    (current_user["id"],)
+                )
+                
+                # Record photo
                 conn.execute("""
                     INSERT INTO photos (user_id, filename, photo_type, template_name, file_path, credits_used)
                     VALUES (?, ?, ?, ?, ?, ?)
-                """, (current_user["id"], filename, "ar_photo", template_name, str(save_path), 0))
+                """, (
+                    current_user["id"], 
+                    filename, 
+                    "ar_photo", 
+                    template_name, 
+                    str(save_path), 
+                    credits_used
+                ))
+                
                 conn.commit()
-
-        logger.info(f"AR photo saved: {save_path}")
-
-        return JSONResponse(content={"success": True, "filename": filename})
+        
+        # Get updated credit balance
+        with auth_service.db_manager.get_connection() as conn:
+            cursor = conn.execute(
+                "SELECT credit_balance FROM users WHERE id = ?",
+                (current_user["id"],)
+            )
+            result = cursor.fetchone()
+            new_credit_balance = result[0] if result else 0
+        
+        logger.info(f"[AR UPLOAD SUCCESS] {username} - {filename} - Credits used: {credits_used}, Remaining: {new_credit_balance}")
+        
+        return JSONResponse(content={
+            "success": True, 
+            "filename": filename,
+            "message": f"AR photo saved successfully",
+            "data": {
+                "filename": filename,
+                "file_path": f"/static/ar_results/{username}/{filename}",
+                "template_used": template_name,
+                "credits_used": credits_used,
+                "credits_remaining": new_credit_balance,
+                "user": username,
+                "processing_time": datetime.now().isoformat()
+            }
+        })
 
     except Exception as e:
-        logger.error(f"Error during AR upload: {e}")
-        return JSONResponse(content={"success": False, "error": str(e)})
+        logger.error(f"[AR UPLOAD ERROR] {e}")
+        return JSONResponse(
+            status_code=500,
+            content={"success": False, "error": str(e)}
+        )
 
 # =============================================
 # USER MANAGEMENT & ADMIN API ROUTES
@@ -1105,11 +1209,12 @@ async def ar_upload(
 
 @app.get("/api/user/credits")
 async def get_user_credits(current_user = Depends(get_current_user)):
-    """Get current user's credit balance"""
+    """Get current user credit balance"""
     return {
         "success": True,
-        "credits": current_user["credit_balance"],
-        "username": current_user["username"]
+        "credits": current_user.get("credit_balance", 0),
+        "username": current_user["username"],
+        "role": current_user.get("role", "user")
     }
 
 @app.get("/api/history")

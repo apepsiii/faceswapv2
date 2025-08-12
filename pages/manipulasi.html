@@ -280,35 +280,62 @@
     <script>
         localStorage.setItem('characterVisitCount', 0);
         let selectedCharacter = null;
+        
         // Check authentication
         const token = localStorage.getItem('token');
         if (!token) {
             window.location.replace('/login');
         }
 
-  if (!sessionStorage.getItem('refreshed')) {
-        sessionStorage.setItem('refreshed', 'true');
-        setTimeout(() => {
-            window.location.reload();
-        }, 1000); // 0.5 detik
-    } else {
-        sessionStorage.removeItem('refreshed');
-    }// 500 ms = 0.5 detik
+        // Check if user has valid session/credit - if yes, skip payment
+        async function checkUserStatus() {
+            try {
+                const response = await fetch('/api/me', {
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+                
+                if (response.ok) {
+                    const userData = await response.json();
+                    console.log('User status:', userData);
+                    
+                    // Check if user has credits or is admin
+                    if (userData.user && (userData.user.credit_balance > 0 || userData.user.role === 'admin')) {
+                        console.log('User has credits or is admin, skip payment');
+                        return true; // Skip payment
+                    }
+                }
+            } catch (error) {
+                console.log('Failed to check user status:', error);
+            }
+            
+            return false; // Needs payment
+        }
+
+        if (!sessionStorage.getItem('refreshed')) {
+            sessionStorage.setItem('refreshed', 'true');
+            setTimeout(() => {
+                window.location.reload();
+            }, 1000);
+        } else {
+            sessionStorage.removeItem('refreshed');
+        }
 
         // Load characters on page load
-    document.addEventListener('DOMContentLoaded', function() {
-    // Hapus selectedCharacter biar tampilan grid karakter fresh
-    localStorage.removeItem('selectedCharacter');
+        document.addEventListener('DOMContentLoaded', function() {
+            // Hapus selectedCharacter biar tampilan grid karakter fresh
+            localStorage.removeItem('selectedCharacter');
 
-    loadCharacters();
+            loadCharacters();
 
-    // Optional: Repaint ekstra biar makin aman di HP tertentu
-    setTimeout(() => {
-        document.body.style.visibility = 'hidden';
-        document.body.offsetHeight;
-        document.body.style.visibility = 'visible';
-    }, 50);
-});
+            // Optional: Repaint ekstra biar makin aman di HP tertentu
+            setTimeout(() => {
+                document.body.style.visibility = 'hidden';
+                document.body.offsetHeight;
+                document.body.style.visibility = 'visible';
+            }, 50);
+        });
 
         async function loadCharacters() {
             const loading = document.getElementById('characterLoading');
@@ -381,7 +408,7 @@
             });
         }
 
-        function selectCharacter(templateName, displayName) {
+        async function selectCharacter(templateName, displayName) {
             selectedCharacter = {
                 name: templateName,
                 displayName: displayName
@@ -396,17 +423,35 @@
             selectedTemplate.style.display = 'block';
             continueBtn.style.display = 'inline-block';
 
-            // Otomatis klik tombol lanjut
-            continueBtn.click();
+            // Store selected character
+            localStorage.setItem('selectedCharacter', JSON.stringify(selectedCharacter));
+            
+            // Check user status before redirecting
+            const hasCreditsOrAdmin = await checkUserStatus();
+            
+            if (hasCreditsOrAdmin) {
+                // User has credits or is admin, go directly to camera
+                console.log('Redirecting to camera (has credits/admin)');
+                window.location.replace('/camera');
+            } else {
+                // User needs to pay first
+                console.log('Redirecting to payment (no credits)');
+                window.location.replace('/payment');
+            }
         }
 
-        // Continue button
-        document.getElementById('continueBtn').addEventListener('click', function() {
+        // Continue button (backup - should auto-trigger)
+        document.getElementById('continueBtn').addEventListener('click', async function() {
             if (selectedCharacter) {
-                // Store selected character
                 localStorage.setItem('selectedCharacter', JSON.stringify(selectedCharacter));
-                // Redirect to camera page
-                window.location.replace('/payment');
+                
+                const hasCreditsOrAdmin = await checkUserStatus();
+                
+                if (hasCreditsOrAdmin) {
+                    window.location.replace('/camera');
+                } else {
+                    window.location.replace('/payment');
+                }
             }
         });
 

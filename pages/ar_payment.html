@@ -79,11 +79,13 @@
       font-weight: bold;
       color: #ffff;
     }
- .promo-text b {
+
+    .promo-text b {
       font-size: 22px;
       font-weight: bold;
       color: #d0ff00;
     }
+
     .promo-text {
       margin-top: 20px;
       font-size: 14px;
@@ -112,6 +114,130 @@
       transform: translateY(-2px);
       box-shadow: 0 12px 30px rgba(0, 255, 204, 0.4);
     }
+
+    /* Loading State */
+    .loading-state {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 240px;
+      background: #f8f9fa;
+      border-radius: 8px;
+    }
+
+    .spinner {
+      width: 40px;
+      height: 40px;
+      border: 4px solid #e9ecef;
+      border-top: 4px solid #007bff;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+      margin-bottom: 15px;
+    }
+
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+
+    .loading-text {
+      color: #666;
+      font-size: 14px;
+      font-weight: 500;
+    }
+
+    /* Error State */
+    .error-state {
+      background: rgba(220, 53, 69, 0.1);
+      border: 2px solid rgba(220, 53, 69, 0.3);
+      border-radius: 8px;
+      padding: 20px;
+      margin: 15px 0;
+      text-align: center;
+    }
+
+    .error-icon {
+      font-size: 2rem;
+      color: #dc3545;
+      margin-bottom: 10px;
+    }
+
+    .error-title {
+      font-size: 16px;
+      font-weight: bold;
+      color: #dc3545;
+      margin-bottom: 8px;
+    }
+
+    .error-message {
+      font-size: 14px;
+      color: #ffff;
+      margin-bottom: 15px;
+      line-height: 1.4;
+    }
+
+    .retry-btn {
+      background: #dc3545;
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 20px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .retry-btn:hover {
+      background: #c82333;
+      transform: translateY(-1px);
+    }
+
+    /* Status Indicator */
+    .status-indicator {
+      margin-top: 15px;
+      padding: 12px;
+      border-radius: 8px;
+      font-size: 14px;
+      font-weight: 500;
+      display: none;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .status-waiting {
+      background: rgba(255, 193, 7, 0.2);
+      border: 1px solid rgba(255, 193, 7, 0.5);
+      color: #ffc107;
+      display: flex;
+    }
+
+    .status-success {
+      background: rgba(40, 167, 69, 0.2);
+      border: 1px solid rgba(40, 167, 69, 0.5);
+      color: #28a745;
+    }
+
+    .status-icon {
+      font-size: 1rem;
+    }
+
+    /* Countdown */
+    .countdown {
+      margin-top: 15px;
+      font-size: 13px;
+      opacity: 0.8;
+      text-align: center;
+    }
+
+    .countdown-number {
+      font-weight: bold;
+      color: #ffd700;
+    }
   </style>
 </head>
 <body>
@@ -120,21 +246,61 @@
       <div class="logo-text">
         <img src="/static/images/logo.png" height="50px" onclick="logout()">
       </div>
-      <div class="qris-wrapper">
-        <img src="/static/images/Logo_QRIS.png" height="50px">
-        <img class="qris-img" id="qris-img" src="/static/images/loading.gif" alt="QRIS">
+
+      <!-- QRIS Wrapper -->
+      <div class="qris-wrapper" id="qrisWrapper">
+        <img src="/static/images/Logo_QRIS.png" height="50px" class="logo-qris">
+        
+        <!-- Loading State -->
+        <div class="loading-state" id="loadingState">
+          <div class="spinner"></div>
+          <div class="loading-text">Memuat QR Code...</div>
+        </div>
+        
+        <!-- QR Code Image -->
+        <img class="qris-img" id="qris-img" src="" alt="QRIS" style="display: none;">
       </div>
-      <div class="steps">
+
+      <!-- Error State (Outside qris-wrapper) -->
+      <div class="error-state" id="errorState" style="display: none;">
+        <div class="error-icon">
+          <i class="fas fa-exclamation-triangle"></i>
+        </div>
+        <div class="error-title">Gagal Memuat QRIS</div>
+        <div class="error-message" id="errorMessage">
+          Terjadi kesalahan saat memuat QR Code. Silakan coba lagi.
+        </div>
+        <button class="retry-btn" onclick="retryLoadQRIS()">
+          <i class="fas fa-redo"></i>
+          Coba Lagi
+        </button>
+      </div>
+
+      <!-- Status Indicator -->
+      <div class="status-indicator status-waiting" id="statusIndicator">
+        <i class="fas fa-clock status-icon"></i>
+        <span>Menunggu pembayaran...</span>
+      </div>
+
+      <!-- Payment Steps -->
+      <div class="steps" id="paymentSteps">
         <div><span>1</span>Open your<br>payment app</div>
         <div><span>2</span>Scan this<br>QR code</div>
         <div><span>3</span>Verify the<br>details</div>
         <div><span>4</span>Confirm the<br>transaction</div>
       </div>
 
+      <!-- Promo Text -->
       <div class="promo-text">
         Bayar cuma <b>Rp. 5.000</b> untuk <b>3 KALI</b> foto dan dapatkan foto kece langsung!
       </div>
 
+      <!-- Countdown -->
+      <div class="countdown" id="countdown">
+        Auto redirect dalam <span class="countdown-number" id="countdownNumber">60</span> detik
+      </div>
+
+      <!-- Continue Button -->
       <div class="continue-btn" id="continueBtn" style="display: none;">
         <i class="fa-solid fa-camera-retro"></i> Lanjut ke Photobooth
       </div>
@@ -142,98 +308,221 @@
   </div>
 
   <script>
-let orderId = null;
-  let pollingInterval = null;
+    let orderId = null;
+    let pollingInterval = null;
+    let countdownInterval = null;
+    let countdownTime = 60;
+    let retryCount = 0;
+    const maxRetries = 3;
 
-  async function loadQRIS() {
-    try {
-      const res = await fetch('/api/qris/token');
-      const data = await res.json();
+    // Initialize
+    window.onload = function() {
+      loadQRIS();
+      startCountdown();
+      setupIdleRedirect();
+    };
 
-      if (data.qris_url && data.order_id) {
-        orderId = data.order_id;
-        document.getElementById('qris-img').src = data.qris_url;
+    async function loadQRIS() {
+      try {
+        retryCount++;
+        showLoadingState();
+        hideError();
 
-        // Mulai polling status pembayaran
-        pollingInterval = setInterval(checkPaymentStatus, 3000);
+        console.log(`Attempting to load QRIS (attempt ${retryCount}/${maxRetries})`);
+
+        const res = await fetch('/api/qris/token');
+        
+        if (!res.ok) {
+          throw new Error(`HTTP ${res.status}: ${res.statusText}`);
+        }
+
+        const data = await res.json();
+        console.log('QRIS Response:', data);
+
+        if (data.success && data.qris_url && data.order_id) {
+          orderId = data.order_id;
+          showQRCode(data.qris_url);
+          startPaymentPolling();
+          showWaitingStatus();
+        } else {
+          throw new Error(data.error || 'QRIS URL tidak tersedia dalam respons');
+        }
+
+      } catch (error) {
+        console.error('QRIS load error:', error);
+        showError(`Gagal memuat QRIS: ${error.message}`);
+      }
+    }
+
+    function retryLoadQRIS() {
+      if (retryCount < maxRetries) {
+        loadQRIS();
       } else {
-        alert("QRIS gagal dimuat");
+        showError('Maksimal percobaan tercapai. Silakan refresh halaman atau hubungi admin.');
       }
-    } catch (error) {
-      alert("QRIS Error: " + error);
     }
-  }
-// ==== FITUR AUTO REDIRECT 60 DETIK TANPA AKTIVITAS ====
-let idleTimeout;
-const idleLimit = 60000; // 60 detik
 
-function resetIdleTimer() {
-    clearTimeout(idleTimeout);
-    idleTimeout = setTimeout(() => {
-        window.location.replace('/ar_manipulasi');
-    }, idleLimit);
-}
+    function showLoadingState() {
+      document.getElementById('loadingState').style.display = 'flex';
+      document.getElementById('qris-img').style.display = 'none';
+      document.getElementById('statusIndicator').style.display = 'none';
+    }
 
-// Event untuk deteksi aktivitas
-['mousemove', 'mousedown', 'keypress', 'touchstart'].forEach(evt => {
-    document.addEventListener(evt, resetIdleTimer);
-});
+    function showQRCode(qrisUrl) {
+      document.getElementById('loadingState').style.display = 'none';
+      const qrImg = document.getElementById('qris-img');
+      qrImg.src = qrisUrl;
+      qrImg.style.display = 'block';
+      
+      // Reset retry count on success
+      retryCount = 0;
+    }
 
-// Jalankan timer awal
-resetIdleTimer();
-// ======================================================
-  async function checkPaymentStatus() {
-    try {
-      const res = await fetch(`/api/qris/status?order_id=${orderId}`);
-      const data = await res.json();
+    function showError(message) {
+      document.getElementById('loadingState').style.display = 'none';
+      document.getElementById('qris-img').style.display = 'none';
+      document.getElementById('statusIndicator').style.display = 'none';
+      document.getElementById('paymentSteps').style.display = 'none';
+      
+      document.getElementById('errorMessage').textContent = message;
+      document.getElementById('errorState').style.display = 'block';
+    }
 
-      if (data.transaction_status === "settlement") {
+    function hideError() {
+      document.getElementById('errorState').style.display = 'none';
+      document.getElementById('paymentSteps').style.display = 'flex';
+    }
+
+    function showWaitingStatus() {
+      const statusEl = document.getElementById('statusIndicator');
+      statusEl.className = 'status-indicator status-waiting';
+      statusEl.style.display = 'flex';
+      statusEl.innerHTML = '<i class="fas fa-clock status-icon"></i><span>Menunggu pembayaran...</span>';
+    }
+
+    function showSuccessStatus() {
+      const statusEl = document.getElementById('statusIndicator');
+      statusEl.className = 'status-indicator status-success';
+      statusEl.style.display = 'flex';
+      statusEl.innerHTML = '<i class="fas fa-check-circle status-icon"></i><span>Pembayaran berhasil!</span>';
+    }
+
+    function startPaymentPolling() {
+      if (pollingInterval) {
         clearInterval(pollingInterval);
-
-        // Tampilkan tombol (opsional)
-        // document.getElementById('continueBtn').style.display = 'inline-flex';
-
-        // Atau langsung redirect
-        window.location.href = "/ar-character";
       }
-    } catch (error) {
-      console.error("Status check error:", error);
+
+      pollingInterval = setInterval(checkPaymentStatus, 3000);
     }
-  }
-async function logout() {
-    try {
+
+    async function checkPaymentStatus() {
+      try {
+        const res = await fetch(`/api/qris/status?order_id=${orderId}`);
+        const data = await res.json();
+
+        console.log('Payment status:', data.transaction_status);
+
+        if (data.transaction_status === "settlement") {
+          clearInterval(pollingInterval);
+          clearInterval(countdownInterval);
+          
+          showSuccessStatus();
+          document.getElementById('countdown').innerHTML = 
+            '<span style="color: #28a745;">✅ Pembayaran berhasil! Redirecting...</span>';
+
+          // Auto redirect after 2 seconds
+          setTimeout(() => {
+            window.location.href = "/ar-character";
+          }, 2000);
+
+        } else if (data.transaction_status === "expire" || data.transaction_status === "cancel") {
+          clearInterval(pollingInterval);
+          showError('Pembayaran gagal atau kadaluarsa. Silakan coba lagi.');
+        }
+      } catch (error) {
+        console.error("Status check error:", error);
+        // Don't show error for status check failures, just log them
+      }
+    }
+
+    function startCountdown() {
+      countdownInterval = setInterval(() => {
+        countdownTime--;
+        document.getElementById('countdownNumber').textContent = countdownTime;
+        
+        if (countdownTime <= 0) {
+          clearInterval(countdownInterval);
+          clearInterval(pollingInterval);
+          window.location.replace('/ar_manipulasi');
+        }
+      }, 1000);
+    }
+
+    // ==== FITUR AUTO REDIRECT 60 DETIK TANPA AKTIVITAS ====
+    let idleTimeout;
+    const idleLimit = 60000; // 60 detik
+
+    function resetIdleTimer() {
+      clearTimeout(idleTimeout);
+      idleTimeout = setTimeout(() => {
+        window.location.replace('/ar_manipulasi');
+      }, idleLimit);
+    }
+
+    function setupIdleRedirect() {
+      // Event untuk deteksi aktivitas
+      ['mousemove', 'mousedown', 'keypress', 'touchstart'].forEach(evt => {
+        document.addEventListener(evt, resetIdleTimer);
+      });
+
+      // Jalankan timer awal
+      resetIdleTimer();
+    }
+
+    async function logout() {
+      try {
         const token = localStorage.getItem('token');
 
         if (token) {
-            try {
-                await fetch('/api/logout', {
-                    method: 'POST',
-                    headers: {
-                        'Authorization': `Bearer ${token}`
-                    }
-                });
-            } catch (error) {
-                console.log('Logout API not available, proceeding with local logout');
-            }
+          try {
+            await fetch('/api/logout', {
+              method: 'POST',
+              headers: {
+                'Authorization': `Bearer ${token}`
+              }
+            });
+          } catch (error) {
+            console.log('Logout API not available, proceeding with local logout');
+          }
         }
 
         localStorage.removeItem('token');
-
-        const notification = document.getElementById('notification');
-        notification.className = 'notification success';
-        notification.textContent = 'Logout berhasil!';
-        notification.classList.add('show');
+        localStorage.removeItem('user');
+        localStorage.removeItem('selectedCharacter');
 
         setTimeout(() => {
-            window.location.href = '/login';
-        }, 1000);
-    } catch (error) {
+          window.location.href = '/login';
+        }, 100);
+
+      } catch (error) {
         console.error('Logout error:', error);
-        localStorage.removeItem('token');
+        localStorage.clear();
         window.location.href = '/login';
+      }
     }
-}
-  window.onload = loadQRIS;
+
+    // Cleanup on page unload
+    window.addEventListener('beforeunload', () => {
+      if (pollingInterval) {
+        clearInterval(pollingInterval);
+      }
+      if (countdownInterval) {
+        clearInterval(countdownInterval);
+      }
+      if (idleTimeout) {
+        clearTimeout(idleTimeout);
+      }
+    });
   </script>
 </body>
 </html>

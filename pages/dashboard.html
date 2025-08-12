@@ -642,19 +642,23 @@
         }
 
         function goToARPhoto() {
-            const user = JSON.parse(localStorage.getItem('user') || '{}');
-            
-            if (user.credit_balance <= 0) {
-                alert('Credits habis! Silakan lakukan pembayaran terlebih dahulu.');
-                goToPayment();
-                return;
-            }
-
             const dashboard = window.dashboard;
             if (dashboard) dashboard.showLoading();
 
             setTimeout(() => {
-                window.location.href = '/ar_manipulasi';
+                // Langsung ke ar-character (skip ar_manipulasi)
+                window.location.href = '/ar-character';
+            }, 300);
+        }
+
+        // Update juga untuk goToFaceSwap() agar konsisten
+        function goToFaceSwap() {
+            const dashboard = window.dashboard;
+            if (dashboard) dashboard.showLoading();
+
+            setTimeout(() => {
+                // Langsung ke manipulasi (character selection untuk face swap)
+                window.location.href = '/manipulasi';
             }, 300);
         }
 

@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Ambil Foto - AR Photo</title>
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet">
+<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
 <style>
     * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Poppins', sans-serif; }
     body {
@@ -16,13 +17,38 @@
         overflow: hidden;
         position: relative;
     }
-    .logo {
+    
+    .header {
         position: absolute;
         top: 20px;
         left: 20px;
-        width: 120px;
-        z-index: 20;
+        right: 20px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        z-index: 30;
     }
+    
+    .logo {
+        width: 120px;
+    }
+    
+    .credit-display {
+        background: rgba(0, 0, 0, 0.7);
+        color: #fff;
+        padding: 10px 20px;
+        border-radius: 15px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        backdrop-filter: blur(10px);
+    }
+    
+    .credit-display i {
+        color: #00ffcc;
+        font-size: 1.2rem;
+    }
+    
     .camera-container {
         position: relative;
         width: 100%;
@@ -65,12 +91,17 @@
         top: 100px;
         left: 50%;
         transform: translateX(-50%);
-        font-size: 3rem;
+        font-size: 2rem;
         font-weight: bold;
         color: #fff;
         z-index: 30;
         display: none;
         white-space: nowrap;
+        text-align: center;
+        background: rgba(0, 0, 0, 0.8);
+        padding: 20px;
+        border-radius: 15px;
+        backdrop-filter: blur(10px);
     }
     .black-background {
         position: absolute;
@@ -83,7 +114,13 @@
 </head>
 <body>
 
-<img src="/static/images/logo.png" alt="Logo" class="logo">
+<div class="header">
+    <img src="/static/images/logo.png" alt="Logo" class="logo">
+    <div class="credit-display">
+        <i class="fas fa-coins"></i>
+        <span>Credits: <span id="creditCount">-</span></span>
+    </div>
+</div>
 
 <div class="camera-container">
     <video id="video" autoplay muted playsinline></video>
@@ -91,7 +128,10 @@
     <div id="blackBackground" class="black-background"></div>
     <canvas id="canvas" style="display:none;"></canvas>
     <div id="overlay" class="overlay">READY</div>
-    <div id="processingScreen" class="processing-screen">Foto Anda sedang diproses...</div>
+    <div id="processingScreen" class="processing-screen">
+        <div>Foto Anda sedang diproses...</div>
+        <div style="font-size: 1rem; margin-top: 10px; opacity: 0.8;">Mohon tunggu sebentar</div>
+    </div>
 </div>
 
 <audio id="cekrekSound" src="/static/images/cekrek.mp3" preload="auto"></audio>
@@ -104,30 +144,73 @@ const canvas = document.getElementById("canvas");
 const overlay = document.getElementById("overlay");
 const cekrekSound = document.getElementById("cekrekSound");
 const processingScreen = document.getElementById("processingScreen");
-const characterData = localStorage.getItem("selectedCharacter");
 let existingTimer = null;
+let currentUser = null;
 
+// Check authentication
+const token = localStorage.getItem('token');
+if (!token) {
+    window.location.replace('/login');
+}
+
+// Get selected character
+const characterData = localStorage.getItem("selectedCharacter");
 if (!characterData) {
-    window.location.replace("ar_character.html");
+    window.location.replace("ar-character");
 }
 const selectedCharacter = JSON.parse(characterData);
 
-// Start camera
-navigator.mediaDevices.getUserMedia({ video: true })
-.then(stream => {
-    videoStream = stream;
-    video.srcObject = stream;
-
-    video.addEventListener("loadedmetadata", () => {
-        setTimeout(() => {
-            resetAllState();
-            showReadyThenCountdown();
-        }, 500);
-    }, { once: true }); // hanya trigger sekali
-})
-.catch(() => {
-    alert("Tidak dapat mengakses kamera.");
+// Load user data and start camera
+document.addEventListener('DOMContentLoaded', async function() {
+    await loadUserData();
+    await startCamera();
 });
+
+// Load user data and credit info
+async function loadUserData() {
+    try {
+        const response = await fetch('/api/me', {
+            headers: {
+                'Authorization': `Bearer ${token}`
+            }
+        });
+        
+        if (response.ok) {
+            const userData = await response.json();
+            if (userData.success && userData.user) {
+                currentUser = userData.user;
+                document.getElementById('creditCount').textContent = userData.user.credit_balance || 0;
+                
+                // Double check credits
+                if (userData.user.role !== 'admin' && userData.user.credit_balance < 1) {
+                    alert('Tidak ada credit tersisa! Redirecting to payment...');
+                    window.location.replace('/ar_payment');
+                    return;
+                }
+            }
+        }
+    } catch (error) {
+        console.error('Error loading user data:', error);
+    }
+}
+
+// Start camera
+async function startCamera() {
+    try {
+        videoStream = await navigator.mediaDevices.getUserMedia({ video: true });
+        video.srcObject = videoStream;
+
+        video.addEventListener("loadedmetadata", () => {
+            setTimeout(() => {
+                resetAllState();
+                showReadyThenCountdown();
+            }, 500);
+        }, { once: true });
+    } catch (error) {
+        alert("Tidak dapat mengakses kamera.");
+        console.error('Camera error:', error);
+    }
+}
 
 function resetAllState() {
     overlay.style.display = "none";
@@ -149,10 +232,9 @@ function showReadyThenCountdown() {
     fetch('/relay?state=on')
     .then(() => console.log("Lampu HIDUP"))
     .catch(() => console.log("Gagal Hidupkan lampu"));
+    
     overlay.textContent = "READY";
     overlay.style.display = "flex";
-
-    // Lampu nyala bersamaan dengan teks READ
 
     setTimeout(() => {
         startCountdown();
@@ -163,7 +245,7 @@ function startCountdown() {
     let count = 5;
     overlay.textContent = count;
 
-    // Play karakter video sesuai karakter
+    // Play character video
     if (selectedCharacter.name.toLowerCase().includes("jumbo")) {
         characterVideo.src = "/static/ar_assets/thumbnail/bimodanteman.webm";
         characterVideo.style.display = "block";
@@ -224,52 +306,77 @@ function capturePhoto() {
     ctx.drawImage(video, offsetX, offsetY, cropWidth, cropHeight, 0, 0, cropWidth, cropHeight);
     ctx.restore();
 
-    const characterFrame = new Image();
-    if (selectedCharacter.name.toLowerCase().includes("minion")) {
-        characterFrame.src = "/static/ar_assets/frame_full/minion_frame.png";
-    } else if (selectedCharacter.name.toLowerCase().includes("jumbo")) {
-        characterFrame.src = "/static/ar_assets/frame_full/jumbo_frame.png";
-    } else {
-        characterFrame.src = "/static/images/frame1.png";
+    // Convert to blob and upload
+    canvas.toBlob(async (blob) => {
+        await uploadPhoto(blob);
+    }, "image/jpeg", 1.0);
+}
+
+async function uploadPhoto(blob) {
+    try {
+        const formData = new FormData();
+        formData.append("webcam", blob, "capture.jpg");
+        formData.append("template_name", selectedCharacter.name);
+
+        const response = await fetch("/api/ar_upload", {
+            method: "POST",
+            headers: {
+                'Authorization': `Bearer ${token}`
+            },
+            body: formData
+        });
+
+        const data = await response.json();
+
+        if (data.success) {
+            console.log('AR Upload successful:', data);
+            console.log('Credits remaining:', data.data?.credits_remaining);
+            
+            // Update credit display
+            if (data.data?.credits_remaining !== undefined) {
+                document.getElementById('creditCount').textContent = data.data.credits_remaining;
+            }
+            
+            // Redirect to result page
+            const resultUrl = `/ar-result?img=${encodeURIComponent(data.filename)}`;
+            window.location.replace(resultUrl);
+            
+        } else {
+            console.error('Upload failed:', data);
+            
+            // Handle specific errors
+            if (response.status === 402) {
+                alert("Credit tidak mencukupi! Redirecting to payment...");
+                window.location.replace('/ar_payment');
+            } else {
+                alert("Gagal simpan foto: " + (data.error || 'Unknown error'));
+                resetToCamera();
+            }
+        }
+        
+    } catch (error) {
+        console.error('Upload error:', error);
+        alert("Koneksi gagal. Silakan coba lagi.");
+        resetToCamera();
     }
-
-    characterFrame.onload = () => {
-        ctx.drawImage(characterFrame, 0, 0, cropWidth, cropHeight);
-
-        const frontFrame = new Image();
-        frontFrame.src = "/static/images/frame1.png";
-        frontFrame.onload = () => {
-            ctx.drawImage(frontFrame, 0, 0, cropWidth, cropHeight);
-
-            characterVideo.onended = () => {
-                canvas.toBlob(blob => {
-                    const formData = new FormData();
-                    formData.append("webcam", blob, "capture.jpg");
-                    formData.append("template_name", selectedCharacter.name);
-
-                    fetch("/api/ar_upload", {
-                        method: "POST",
-                        body: formData
-                    })
-                    .then(res => res.json())
-                    .then(data => {
-                        if (data.success) {
-                            window.location.replace("ar-result?img=" + encodeURIComponent(data.filename));
-                        } else {
-                            alert("Gagal simpan foto.");
-                        }
-                    })
-                    .catch(() => alert("Koneksi gagal."));
-                }, "image/jpeg", 1.0);
-            };
-        };
-    };
 }
 
 function showProcessingScreen() {
     video.style.display = "none";
     processingScreen.style.display = "flex";
 }
+
+function resetToCamera() {
+    video.style.display = "block";
+    processingScreen.style.display = "none";
+    
+    setTimeout(() => {
+        resetAllState();
+        showReadyThenCountdown();
+    }, 2000);
+}
+
+// Cleanup on page unload
 window.addEventListener("beforeunload", () => {
     if (videoStream) {
         videoStream.getTracks().forEach(track => track.stop());

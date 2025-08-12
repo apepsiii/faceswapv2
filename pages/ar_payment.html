@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Payment</title>
+  <title>Payment - AR Photo</title>
   <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
   <style>
     body, html {
@@ -36,6 +36,7 @@
       font-weight: bold;
       color: #008cff;
       margin-bottom: 10px;
+      cursor: pointer;
     }
 
     .qris-wrapper {
@@ -115,25 +116,50 @@
       box-shadow: 0 12px 30px rgba(0, 255, 204, 0.4);
     }
 
-    /* Loading State */
-    .loading-state {
-      display: flex;
-      flex-direction: column;
+    .back-home-btn {
+      margin-top: 15px;
+      padding: 10px 18px;
+      background: rgba(255, 255, 255, 0.1);
+      color: white;
+      border: 2px solid rgba(255, 255, 255, 0.3);
+      border-radius: 20px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      display: inline-flex;
       align-items: center;
-      justify-content: center;
-      height: 240px;
-      background: #f8f9fa;
-      border-radius: 8px;
+      gap: 8px;
+      transition: all 0.3s ease;
+      backdrop-filter: blur(10px);
     }
 
-    .spinner {
+    .back-home-btn:hover {
+      background: rgba(255, 255, 255, 0.2);
+      border-color: rgba(255, 255, 255, 0.5);
+      transform: translateY(-2px);
+    }
+
+    .auto-redirect-info {
+      margin-top: 15px;
+      font-size: 12px;
+      color: rgba(255, 255, 255, 0.7);
+      font-style: italic;
+    }
+
+    .auto-redirect-info span {
+      color: #00ffcc;
+      font-weight: bold;
+    }
+
+    /* Loading and error states */
+    .loading-spinner {
       width: 40px;
       height: 40px;
-      border: 4px solid #e9ecef;
-      border-top: 4px solid #007bff;
+      border: 4px solid #f3f3f3;
+      border-top: 4px solid #008cff;
       border-radius: 50%;
       animation: spin 1s linear infinite;
-      margin-bottom: 15px;
+      margin: 20px auto;
     }
 
     @keyframes spin {
@@ -141,168 +167,87 @@
       100% { transform: rotate(360deg); }
     }
 
-    .loading-text {
-      color: #666;
-      font-size: 14px;
-      font-weight: 500;
-    }
-
-    /* Error State */
-    .error-state {
-      background: rgba(220, 53, 69, 0.1);
-      border: 2px solid rgba(220, 53, 69, 0.3);
-      border-radius: 8px;
-      padding: 20px;
-      margin: 15px 0;
-      text-align: center;
-    }
-
-    .error-icon {
-      font-size: 2rem;
-      color: #dc3545;
-      margin-bottom: 10px;
-    }
-
-    .error-title {
-      font-size: 16px;
-      font-weight: bold;
-      color: #dc3545;
-      margin-bottom: 8px;
-    }
-
     .error-message {
+      color: #ff6b6b;
       font-size: 14px;
-      color: #ffff;
-      margin-bottom: 15px;
-      line-height: 1.4;
+      margin-top: 10px;
+      padding: 10px;
+      background: rgba(255, 107, 107, 0.1);
+      border-radius: 5px;
+      display: none;
     }
 
-    .retry-btn {
-      background: #dc3545;
+    .success-message {
+      color: #51cf66;
+      font-size: 14px;
+      margin-top: 10px;
+      padding: 10px;
+      background: rgba(81, 207, 102, 0.1);
+      border-radius: 5px;
+      display: none;
+    }
+
+    .qris-status {
+      margin-top: 10px;
+      font-size: 12px;
+      opacity: 0.8;
+    }
+
+    .retry-button {
+      margin-top: 15px;
+      padding: 8px 16px;
+      background: #ff6b6b;
       color: white;
       border: none;
-      padding: 10px 20px;
-      border-radius: 20px;
-      font-size: 14px;
-      font-weight: 600;
+      border-radius: 5px;
       cursor: pointer;
-      transition: all 0.3s ease;
-      display: inline-flex;
-      align-items: center;
-      gap: 8px;
-    }
-
-    .retry-btn:hover {
-      background: #c82333;
-      transform: translateY(-1px);
-    }
-
-    /* Status Indicator */
-    .status-indicator {
-      margin-top: 15px;
-      padding: 12px;
-      border-radius: 8px;
       font-size: 14px;
-      font-weight: 500;
       display: none;
-      align-items: center;
-      gap: 8px;
     }
 
-    .status-waiting {
-      background: rgba(255, 193, 7, 0.2);
-      border: 1px solid rgba(255, 193, 7, 0.5);
-      color: #ffc107;
-      display: flex;
-    }
-
-    .status-success {
-      background: rgba(40, 167, 69, 0.2);
-      border: 1px solid rgba(40, 167, 69, 0.5);
-      color: #28a745;
-    }
-
-    .status-icon {
-      font-size: 1rem;
-    }
-
-    /* Countdown */
-    .countdown {
-      margin-top: 15px;
-      font-size: 13px;
-      opacity: 0.8;
-      text-align: center;
-    }
-
-    .countdown-number {
-      font-weight: bold;
-      color: #ffd700;
+    .retry-button:hover {
+      background: #ee5a52;
     }
   </style>
 </head>
 <body>
   <div class="center-wrapper">
     <div class="payment-box">
-      <div class="logo-text">
-        <img src="/static/images/logo.png" height="50px" onclick="logout()">
+      <div class="logo-text" onclick="logout()">
+        <img src="/static/images/logo.png" height="50px">
       </div>
-
-      <!-- QRIS Wrapper -->
-      <div class="qris-wrapper" id="qrisWrapper">
+      
+      <div class="qris-wrapper">
         <img src="/static/images/Logo_QRIS.png" height="50px" class="logo-qris">
-        
-        <!-- Loading State -->
-        <div class="loading-state" id="loadingState">
-          <div class="spinner"></div>
-          <div class="loading-text">Memuat QR Code...</div>
-        </div>
-        
-        <!-- QR Code Image -->
-        <img class="qris-img" id="qris-img" src="" alt="QRIS" style="display: none;">
+        <img class="qris-img" id="qris-img" src="/static/images/loading.gif" alt="QRIS">
+        <div class="qris-status" id="qris-status">Loading QR Code...</div>
       </div>
-
-      <!-- Error State (Outside qris-wrapper) -->
-      <div class="error-state" id="errorState" style="display: none;">
-        <div class="error-icon">
-          <i class="fas fa-exclamation-triangle"></i>
-        </div>
-        <div class="error-title">Gagal Memuat QRIS</div>
-        <div class="error-message" id="errorMessage">
-          Terjadi kesalahan saat memuat QR Code. Silakan coba lagi.
-        </div>
-        <button class="retry-btn" onclick="retryLoadQRIS()">
-          <i class="fas fa-redo"></i>
-          Coba Lagi
-        </button>
-      </div>
-
-      <!-- Status Indicator -->
-      <div class="status-indicator status-waiting" id="statusIndicator">
-        <i class="fas fa-clock status-icon"></i>
-        <span>Menunggu pembayaran...</span>
-      </div>
-
-      <!-- Payment Steps -->
-      <div class="steps" id="paymentSteps">
+      
+      <div class="error-message" id="error-message"></div>
+      <div class="success-message" id="success-message"></div>
+      <button class="retry-button" id="retry-button" onclick="loadQRIS()">Retry Loading QR Code</button>
+      
+      <div class="steps">
         <div><span>1</span>Open your<br>payment app</div>
         <div><span>2</span>Scan this<br>QR code</div>
         <div><span>3</span>Verify the<br>details</div>
         <div><span>4</span>Confirm the<br>transaction</div>
       </div>
 
-      <!-- Promo Text -->
       <div class="promo-text">
-        Bayar cuma <b>Rp. 5.000</b> untuk <b>3 KALI</b> foto dan dapatkan foto kece langsung!
+        Bayar cuma <b>Rp. 5.000</b> untuk <b>3 KALI</b> foto AR dan dapatkan foto kece langsung!
       </div>
 
-      <!-- Countdown -->
-      <div class="countdown" id="countdown">
-        Auto redirect dalam <span class="countdown-number" id="countdownNumber">60</span> detik
-      </div>
-
-      <!-- Continue Button -->
       <div class="continue-btn" id="continueBtn" style="display: none;">
-        <i class="fa-solid fa-camera-retro"></i> Lanjut ke Photobooth
+        <i class="fa-solid fa-camera-retro"></i> Lanjut ke AR Photobooth
+      </div>
+
+      <div class="back-home-btn" onclick="backToHome()">
+        <i class="fa-solid fa-home"></i> Back to Dashboard
+      </div>
+
+      <div class="auto-redirect-info" id="autoRedirectInfo">
+        Auto redirect to dashboard in <span id="countdown">20</span> seconds...
       </div>
     </div>
   </div>
@@ -310,202 +255,305 @@
   <script>
     let orderId = null;
     let pollingInterval = null;
-    let countdownInterval = null;
-    let countdownTime = 60;
     let retryCount = 0;
     const maxRetries = 3;
+    let autoRedirectTimer = null;
+    let countdownTimer = null;
+    let countdownSeconds = 20;
 
-    // Initialize
-    window.onload = function() {
-      loadQRIS();
-      startCountdown();
-      setupIdleRedirect();
-    };
-
-    async function loadQRIS() {
-      try {
-        retryCount++;
-        showLoadingState();
-        hideError();
-
-        console.log(`Attempting to load QRIS (attempt ${retryCount}/${maxRetries})`);
-
-        const res = await fetch('/api/qris/token');
-        
-        if (!res.ok) {
-          throw new Error(`HTTP ${res.status}: ${res.statusText}`);
-        }
-
-        const data = await res.json();
-        console.log('QRIS Response:', data);
-
-        if (data.success && data.qris_url && data.order_id) {
-          orderId = data.order_id;
-          showQRCode(data.qris_url);
-          startPaymentPolling();
-          showWaitingStatus();
-        } else {
-          throw new Error(data.error || 'QRIS URL tidak tersedia dalam respons');
-        }
-
-      } catch (error) {
-        console.error('QRIS load error:', error);
-        showError(`Gagal memuat QRIS: ${error.message}`);
-      }
+    // Authenticated user check
+    const token = localStorage.getItem('token');
+    if (!token) {
+      window.location.replace('/login');
     }
 
-    function retryLoadQRIS() {
-      if (retryCount < maxRetries) {
-        loadQRIS();
-      } else {
-        showError('Maksimal percobaan tercapai. Silakan refresh halaman atau hubungi admin.');
-      }
-    }
-
-    function showLoadingState() {
-      document.getElementById('loadingState').style.display = 'flex';
-      document.getElementById('qris-img').style.display = 'none';
-      document.getElementById('statusIndicator').style.display = 'none';
-    }
-
-    function showQRCode(qrisUrl) {
-      document.getElementById('loadingState').style.display = 'none';
-      const qrImg = document.getElementById('qris-img');
-      qrImg.src = qrisUrl;
-      qrImg.style.display = 'block';
-      
-      // Reset retry count on success
-      retryCount = 0;
-    }
-
-    function showError(message) {
-      document.getElementById('loadingState').style.display = 'none';
-      document.getElementById('qris-img').style.display = 'none';
-      document.getElementById('statusIndicator').style.display = 'none';
-      document.getElementById('paymentSteps').style.display = 'none';
-      
-      document.getElementById('errorMessage').textContent = message;
-      document.getElementById('errorState').style.display = 'block';
-    }
-
-    function hideError() {
-      document.getElementById('errorState').style.display = 'none';
-      document.getElementById('paymentSteps').style.display = 'flex';
-    }
-
-    function showWaitingStatus() {
-      const statusEl = document.getElementById('statusIndicator');
-      statusEl.className = 'status-indicator status-waiting';
-      statusEl.style.display = 'flex';
-      statusEl.innerHTML = '<i class="fas fa-clock status-icon"></i><span>Menunggu pembayaran...</span>';
-    }
-
-    function showSuccessStatus() {
-      const statusEl = document.getElementById('statusIndicator');
-      statusEl.className = 'status-indicator status-success';
-      statusEl.style.display = 'flex';
-      statusEl.innerHTML = '<i class="fas fa-check-circle status-icon"></i><span>Pembayaran berhasil!</span>';
-    }
-
-    function startPaymentPolling() {
-      if (pollingInterval) {
-        clearInterval(pollingInterval);
-      }
-
-      pollingInterval = setInterval(checkPaymentStatus, 3000);
-    }
-
-    async function checkPaymentStatus() {
-      try {
-        const res = await fetch(`/api/qris/status?order_id=${orderId}`);
-        const data = await res.json();
-
-        console.log('Payment status:', data.transaction_status);
-
-        if (data.transaction_status === "settlement") {
-          clearInterval(pollingInterval);
-          clearInterval(countdownInterval);
-          
-          showSuccessStatus();
-          document.getElementById('countdown').innerHTML = 
-            '<span style="color: #28a745;">✅ Pembayaran berhasil! Redirecting...</span>';
-
-          // Auto redirect after 2 seconds
-          setTimeout(() => {
-            window.location.href = "/ar-character";
-          }, 2000);
-
-        } else if (data.transaction_status === "expire" || data.transaction_status === "cancel") {
-          clearInterval(pollingInterval);
-          showError('Pembayaran gagal atau kadaluarsa. Silakan coba lagi.');
-        }
-      } catch (error) {
-        console.error("Status check error:", error);
-        // Don't show error for status check failures, just log them
-      }
-    }
-
-    function startCountdown() {
-      countdownInterval = setInterval(() => {
-        countdownTime--;
-        document.getElementById('countdownNumber').textContent = countdownTime;
-        
-        if (countdownTime <= 0) {
-          clearInterval(countdownInterval);
-          clearInterval(pollingInterval);
-          window.location.replace('/ar_manipulasi');
-        }
-      }, 1000);
-    }
-
-    // ==== FITUR AUTO REDIRECT 60 DETIK TANPA AKTIVITAS ====
+    // Auto-redirect untuk idle timeout
     let idleTimeout;
     const idleLimit = 60000; // 60 detik
 
     function resetIdleTimer() {
       clearTimeout(idleTimeout);
       idleTimeout = setTimeout(() => {
-        window.location.replace('/ar_manipulasi');
+        window.location.replace('/dashboard');
       }, idleLimit);
     }
 
-    function setupIdleRedirect() {
-      // Event untuk deteksi aktivitas
-      ['mousemove', 'mousedown', 'keypress', 'touchstart'].forEach(evt => {
-        document.addEventListener(evt, resetIdleTimer);
-      });
-
-      // Jalankan timer awal
-      resetIdleTimer();
+    // Start auto-redirect countdown (20 seconds)
+    function startAutoRedirect() {
+      console.log('[REDIRECT] Starting 20-second countdown to dashboard');
+      
+      const countdownElement = document.getElementById('countdown');
+      const redirectInfo = document.getElementById('autoRedirectInfo');
+      
+      countdownSeconds = 20;
+      countdownElement.textContent = countdownSeconds;
+      
+      countdownTimer = setInterval(() => {
+        countdownSeconds--;
+        countdownElement.textContent = countdownSeconds;
+        
+        if (countdownSeconds <= 0) {
+          clearInterval(countdownTimer);
+          console.log('[REDIRECT] Auto-redirecting to dashboard');
+          window.location.replace('/dashboard');
+        }
+      }, 1000);
+      
+      // Also set main redirect timer
+      autoRedirectTimer = setTimeout(() => {
+        window.location.replace('/dashboard');
+      }, 20000);
     }
 
+    // Stop auto-redirect countdown
+    function stopAutoRedirect() {
+      if (autoRedirectTimer) {
+        clearTimeout(autoRedirectTimer);
+        autoRedirectTimer = null;
+      }
+      if (countdownTimer) {
+        clearInterval(countdownTimer);
+        countdownTimer = null;
+      }
+      
+      const redirectInfo = document.getElementById('autoRedirectInfo');
+      redirectInfo.style.display = 'none';
+      
+      console.log('[REDIRECT] Auto-redirect cancelled');
+    }
+
+    // Manual back to home function
+    function backToHome() {
+      console.log('[REDIRECT] Manual redirect to dashboard');
+      
+      // Stop all timers
+      stopAutoRedirect();
+      
+      if (pollingInterval) {
+        clearInterval(pollingInterval);
+      }
+      clearTimeout(idleTimeout);
+      
+      window.location.href = '/dashboard';
+    }
+
+    // Event listeners untuk deteksi aktivitas
+    ['mousemove', 'mousedown', 'keypress', 'touchstart'].forEach(evt => {
+      document.addEventListener(evt, resetIdleTimer);
+    });
+
+    // Mulai timer
+    resetIdleTimer();
+
+    // Enhanced QRIS loading dengan error handling
+    async function loadQRIS() {
+      const qrisImg = document.getElementById('qris-img');
+      const qrisStatus = document.getElementById('qris-status');
+      const errorMessage = document.getElementById('error-message');
+      const retryButton = document.getElementById('retry-button');
+
+      try {
+        // Reset UI state
+        errorMessage.style.display = 'none';
+        retryButton.style.display = 'none';
+        qrisImg.src = '/static/images/loading.gif';
+        qrisStatus.textContent = 'Loading QR Code...';
+
+        console.log('[QRIS] Attempting to load QR code, attempt:', retryCount + 1);
+
+        // Get current user info untuk user_id
+        const userResponse = await fetch('/api/me', {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          }
+        });
+
+        if (!userResponse.ok) {
+          throw new Error(`Failed to get user info: ${userResponse.status}`);
+        }
+
+        const userData = await userResponse.json();
+        const userId = userData.user.id;
+
+        console.log('[QRIS] User ID obtained:', userId);
+
+        // Request QRIS token dengan user_id
+        const qrisResponse = await fetch('/api/qris/token', {
+          method: 'GET',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          }
+        });
+
+        console.log('[QRIS] API Response status:', qrisResponse.status);
+
+        if (!qrisResponse.ok) {
+          const errorText = await qrisResponse.text();
+          console.error('[QRIS] API Error response:', errorText);
+          throw new Error(`QRIS API Error (${qrisResponse.status}): ${errorText}`);
+        }
+
+        const qrisData = await qrisResponse.json();
+        console.log('[QRIS] API Response data:', qrisData);
+
+        if (qrisData.success && qrisData.qris_url && qrisData.order_id) {
+          orderId = qrisData.order_id;
+          qrisImg.src = qrisData.qris_url;
+          qrisStatus.textContent = 'QR Code Ready - Scan to Pay';
+          
+          console.log('[QRIS] QR Code loaded successfully, Order ID:', orderId);
+
+          // Mulai polling status pembayaran
+          if (pollingInterval) {
+            clearInterval(pollingInterval);
+          }
+          pollingInterval = setInterval(checkPaymentStatus, 3000);
+
+          // Start auto-redirect countdown after QR code loads
+          startAutoRedirect();
+
+          // Reset retry count on success
+          retryCount = 0;
+
+        } else {
+          throw new Error(qrisData.error || 'Invalid QRIS response format');
+        }
+
+      } catch (error) {
+        console.error('[QRIS] Error loading QR code:', error);
+        
+        retryCount++;
+        qrisStatus.textContent = 'Failed to load QR Code';
+        errorMessage.textContent = `Error: ${error.message}`;
+        errorMessage.style.display = 'block';
+
+        // Show fallback image
+        qrisImg.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjQwIiBoZWlnaHQ9IjI0MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjZjBmMGYwIi8+PHRleHQgeD0iNTAlIiB5PSI0NSUiIGZvbnQtZmFtaWx5PSJBcmlhbCIgZm9udC1zaXplPSIxNiIgZmlsbD0iIzk5OSIgdGV4dC1hbmNob3I9Im1pZGRsZSI+UVIgQ29kZTwvdGV4dD48dGV4dCB4PSI1MCUiIHk9IjU1JSIgZm9udC1mYW1pbHk9IkFyaWFsIiBmb250LXNpemU9IjE0IiBmaWxsPSIjOTk5IiB0ZXh0LWFuY2hvcj0ibWlkZGxlIj5Mb2FkIEZhaWxlZDwvdGV4dD48L3N2Zz4=';
+
+        // Show retry button jika belum mencapai max retries
+        if (retryCount < maxRetries) {
+          retryButton.style.display = 'inline-block';
+          qrisStatus.textContent = `Failed to load - Retry ${retryCount}/${maxRetries}`;
+        } else {
+          qrisStatus.textContent = 'QR Code unavailable - Please try again later';
+          errorMessage.textContent = 'Maximum retry attempts reached. Please refresh the page or contact support.';
+        }
+      }
+    }
+
+    // Enhanced payment status checking
+    async function checkPaymentStatus() {
+      if (!orderId) {
+        console.warn('[PAYMENT] No order ID available for status check');
+        return;
+      }
+
+      try {
+        const response = await fetch(`/api/qris/status?order_id=${orderId}`, {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          }
+        });
+
+        if (!response.ok) {
+          console.error('[PAYMENT] Status check failed:', response.status);
+          return;
+        }
+
+        const data = await response.json();
+        console.log('[PAYMENT] Status check response:', data);
+
+        if (data.transaction_status === "settlement") {
+          console.log('[PAYMENT] Payment successful!');
+          
+          // Stop all timers
+          stopAutoRedirect();
+          
+          // Stop polling
+          if (pollingInterval) {
+            clearInterval(pollingInterval);
+            pollingInterval = null;
+          }
+
+          // Show success message
+          document.getElementById('success-message').textContent = 'Payment successful! Redirecting...';
+          document.getElementById('success-message').style.display = 'block';
+          document.getElementById('qris-status').textContent = 'Payment Confirmed';
+
+          // Redirect to AR character selection
+          setTimeout(() => {
+            window.location.href = "/ar-character";
+          }, 2000);
+
+        } else if (data.transaction_status === "pending") {
+          // Payment still pending, continue polling
+          document.getElementById('qris-status').textContent = 'Waiting for payment...';
+        } else if (data.transaction_status === "expire" || data.transaction_status === "cancel") {
+          // Payment expired or cancelled
+          console.log('[PAYMENT] Payment expired/cancelled');
+          
+          // Stop auto-redirect and polling
+          stopAutoRedirect();
+          
+          if (pollingInterval) {
+            clearInterval(pollingInterval);
+            pollingInterval = null;
+          }
+
+          document.getElementById('error-message').textContent = 'Payment expired or cancelled. Please try again.';
+          document.getElementById('error-message').style.display = 'block';
+          document.getElementById('retry-button').style.display = 'inline-block';
+        }
+
+      } catch (error) {
+        console.error('[PAYMENT] Status check error:', error);
+        // Continue polling despite errors (temporary network issues)
+      }
+    }
+
+    // Enhanced logout function
     async function logout() {
       try {
-        const token = localStorage.getItem('token');
+        // Stop all timers
+        stopAutoRedirect();
+        
+        // Stop polling if active
+        if (pollingInterval) {
+          clearInterval(pollingInterval);
+        }
 
+        // Clear idle timer
+        clearTimeout(idleTimeout);
+
+        // API logout call
         if (token) {
           try {
             await fetch('/api/logout', {
               method: 'POST',
               headers: {
-                'Authorization': `Bearer ${token}`
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
               }
             });
           } catch (error) {
-            console.log('Logout API not available, proceeding with local logout');
+            console.log('Logout API call failed, proceeding with local logout');
           }
         }
 
+        // Clear local storage
         localStorage.removeItem('token');
         localStorage.removeItem('user');
         localStorage.removeItem('selectedCharacter');
 
-        setTimeout(() => {
-          window.location.href = '/login';
-        }, 100);
+        // Redirect
+        window.location.href = '/login';
 
       } catch (error) {
         console.error('Logout error:', error);
+        // Force redirect even if logout fails
         localStorage.clear();
         window.location.href = '/login';
       }
@@ -513,16 +561,26 @@
 
     // Cleanup on page unload
     window.addEventListener('beforeunload', () => {
+      stopAutoRedirect();
       if (pollingInterval) {
         clearInterval(pollingInterval);
       }
-      if (countdownInterval) {
-        clearInterval(countdownInterval);
-      }
-      if (idleTimeout) {
-        clearTimeout(idleTimeout);
-      }
+      clearTimeout(idleTimeout);
     });
+
+    // Initialize QR code loading when page loads
+    window.addEventListener('load', () => {
+      console.log('[APP] Page loaded, initializing QR code...');
+      loadQRIS();
+    });
+
+    // Add error handling for image load failures
+    document.getElementById('qris-img').addEventListener('error', () => {
+      console.error('[QRIS] QR Code image failed to load');
+      document.getElementById('qris-status').textContent = 'QR Code failed to load';
+      document.getElementById('retry-button').style.display = 'inline-block';
+    });
+
   </script>
 </body>
 </html>

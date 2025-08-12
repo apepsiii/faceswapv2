@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Platinum Cineplex</title>
+    <title>Pilih Karakter - Platinum Cineplex</title>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <style>
@@ -15,149 +15,239 @@
         }
         
         body {
-            text-align: center;
-            font-family: sans-serif;
             background: linear-gradient(150deg, #0a1f44, #ff1493);
-            padding: 20px;
-            margin: 0;
-            color: #fff;
             min-height: 100vh;
-            overflow: hidden;
+            color: #fff;
+            overflow-x: hidden;
+            position: relative;
         }
 
-        .page {
+        /* Background Animation */
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs><pattern id="grain" width="100" height="100" patternUnits="userSpaceOnUse"><circle cx="25" cy="25" r="1" fill="rgba(255,255,255,0.05)"/><circle cx="75" cy="75" r="1" fill="rgba(255,255,255,0.03)"/><circle cx="50" cy="10" r="0.5" fill="rgba(255,255,255,0.04)"/></pattern></defs><rect width="100" height="100" fill="url(%23grain)"/></svg>');
+            opacity: 0.5;
+            z-index: -1;
+        }
+
+        .page-container {
             min-height: 100vh;
             display: flex;
-            justify-content: center;
-            align-items: center;
             flex-direction: column;
+            align-items: center;
+            justify-content: flex-start;
+            padding: 20px;
             position: relative;
-            max-width: 1000px;
-            margin: 0 auto;
         }
 
+        /* Header Section */
         .header {
+            width: 100%;
+            max-width: 1200px;
             display: flex;
             justify-content: space-between;
             align-items: center;
-            width: 100%;
             margin-bottom: 30px;
+            z-index: 100;
+        }
+
+        .logo {
+            cursor: pointer;
+            transition: transform 0.3s ease;
+        }
+
+        .logo:hover {
+            transform: scale(1.05);
         }
 
         .logo img {
-            width: 80px;
-            height: 80px;
-            object-fit: cover;
-            cursor: pointer;
+            width: 120px;
+            height: auto;
+            filter: drop-shadow(0 4px 8px rgba(0,0,0,0.3));
         }
 
         .user-info {
             display: flex;
             align-items: center;
             gap: 15px;
+            background: rgba(255,255,255,0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 25px;
+            padding: 10px 20px;
+            border: 1px solid rgba(255,255,255,0.2);
         }
 
         .credit-display {
-            background: linear-gradient(45deg, #00ffcc, #0099ff);
-            color: #0a1f44;
-            padding: 8px 16px;
-            border-radius: 20px;
-            font-weight: bold;
-            box-shadow: 0 4px 15px rgba(0, 255, 204, 0.3);
-            font-size: 0.9rem;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-weight: 600;
         }
 
-        .credit-display.low {
-            background: linear-gradient(45deg, #e74c3c, #c0392b);
-            color: white;
-            animation: pulse-warning 2s infinite;
+        .credit-icon {
+            color: #00ffcc;
+            font-size: 1.2rem;
         }
 
-        @keyframes pulse-warning {
-            0%, 100% { transform: scale(1); }
-            50% { transform: scale(1.05); }
+        /* Title Section */
+        .title-section {
+            text-align: center;
+            margin-bottom: 40px;
+            animation: fadeInUp 0.8s ease-out;
         }
 
-        .user-name {
-            font-size: 0.9rem;
-            opacity: 0.9;
-        }
-
-        h3 {
-            margin-bottom: 30px;
-            font-size: 2rem;
-            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        .main-title {
+            font-size: 3rem;
             font-weight: 700;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+            margin-bottom: 10px;
+            background: linear-gradient(45deg, #00ffcc, #ff1493);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
         }
 
-        .credit-warning {
-            background: rgba(231, 76, 60, 0.2);
-            border: 1px solid rgba(231, 76, 60, 0.5);
-            color: #e74c3c;
-            padding: 20px;
-            border-radius: 15px;
-            margin: 20px 0;
-            max-width: 500px;
-            display: none;
+        .subtitle {
+            font-size: 1.2rem;
+            opacity: 0.9;
+            font-weight: 300;
         }
 
-        .credit-warning h4 {
-            margin-bottom: 15px;
-            font-size: 1.3rem;
-        }
-
-        .credit-warning p {
-            margin-bottom: 20px;
-            line-height: 1.5;
-        }
-
-        .payment-btn {
-            background: linear-gradient(45deg, #e74c3c, #c0392b);
-            color: white;
-            border: none;
-            padding: 12px 24px;
-            border-radius: 25px;
-            cursor: pointer;
-            font-weight: bold;
-            font-size: 1rem;
-            transition: all 0.3s ease;
-            margin: 5px;
-        }
-
-        .payment-btn:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 8px 20px rgba(231, 76, 60, 0.4);
-        }
-
-        .skip-btn {
-            background: rgba(255, 255, 255, 0.1);
-            color: white;
-            border: 2px solid rgba(255, 255, 255, 0.3);
-            padding: 8px 20px;
-            border-radius: 20px;
-            cursor: pointer;
-            font-size: 0.9rem;
-            margin: 5px;
-        }
-
-        .menu-grid {
+        /* Character Grid */
+        .character-grid {
             display: grid;
-            grid-template-columns: repeat(4, 1fr);
-            gap: 20px;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 25px;
+            max-width: 1000px;
+            width: 100%;
             margin-bottom: 40px;
             padding: 0 20px;
-            max-width: 1000px;
-            margin-left: auto;
-            margin-right: auto;
         }
 
-        .menu-grid .menu-item {
-            width: 100%;
-            border-radius: 15px;
+        .character-card {
+            position: relative;
+            border-radius: 20px;
             overflow: hidden;
-            transition: transform 0.3s ease, box-shadow 0.3s ease;
-            display: block;
-            margin: 0 auto;
+            cursor: pointer;
+            transition: all 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+            background: rgba(255,255,255,0.1);
+            backdrop-filter: blur(10px);
+            border: 2px solid rgba(255,255,255,0.2);
+            aspect-ratio: 3/4;
+        }
+
+        .character-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(45deg, rgba(0,255,204,0.1), rgba(255,20,147,0.1));
+            opacity: 0;
+            transition: opacity 0.3s ease;
+            z-index: 1;
+        }
+
+        .character-card:hover::before {
+            opacity: 1;
+        }
+
+        .character-card:hover {
+            transform: translateY(-10px) scale(1.02);
+            box-shadow: 0 20px 40px rgba(0,255,204,0.3);
+            border-color: #00ffcc;
+        }
+
+        .character-card.selected {
+            transform: translateY(-10px) scale(1.05);
+            box-shadow: 0 25px 50px rgba(0,255,204,0.5);
+            border-color: #00ffcc;
+            border-width: 3px;
+        }
+
+        .character-card.selected::before {
+            opacity: 1;
+        }
+
+        .character-image {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            transition: transform 0.4s ease;
+        }
+
+        .character-card:hover .character-image {
+            transform: scale(1.1);
+        }
+
+        .character-overlay {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: linear-gradient(transparent, rgba(0,0,0,0.8));
+            padding: 20px;
+            transform: translateY(100%);
+            transition: transform 0.3s ease;
+            z-index: 2;
+        }
+
+        .character-card:hover .character-overlay {
+            transform: translateY(0);
+        }
+
+        .character-name {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: #fff;
+            margin-bottom: 5px;
+        }
+
+        .character-description {
+            font-size: 0.9rem;
+            color: rgba(255,255,255,0.8);
+            line-height: 1.4;
+        }
+
+        /* Selection Indicator */
+        .selection-indicator {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            width: 30px;
+            height: 30px;
+            background: #00ffcc;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+            transform: scale(0);
+            transition: all 0.3s ease;
+            z-index: 3;
+        }
+
+        .character-card.selected .selection-indicator {
+            opacity: 1;
+            transform: scale(1);
+        }
+
+        .selection-indicator i {
+            color: #0a1f44;
+            font-size: 1rem;
+            font-weight: bold;
+        }
+
+        /* Continue Button */
+        .continue-section {
+            text-align: center;
+            margin-top: 20px;
         }
 
         .continue-btn {
@@ -169,52 +259,89 @@
             font-size: 18px;
             font-weight: 700;
             cursor: pointer;
-            margin-top: 30px;
             transition: all 0.3s ease;
-            display: none;
-            box-shadow: 0 8px 25px rgba(0, 255, 204, 0.3);
+            box-shadow: 0 8px 25px rgba(0,255,204,0.3);
+            opacity: 0;
+            transform: translateY(20px);
+            pointer-events: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .continue-btn.visible {
+            opacity: 1;
+            transform: translateY(0);
+            pointer-events: all;
         }
 
         .continue-btn:hover {
             transform: translateY(-3px);
-            box-shadow: 0 15px 35px rgba(0, 255, 204, 0.4);
+            box-shadow: 0 15px 35px rgba(0,255,204,0.4);
         }
 
-        .continue-btn:disabled {
-            background: #ccc;
-            color: #666;
-            cursor: not-allowed;
-            transform: none;
-            box-shadow: none;
-        }
-
+        /* Loading States */
         .loading-overlay {
             position: fixed;
             top: 0;
             left: 0;
             width: 100%;
             height: 100%;
-            background: rgba(10, 31, 68, 0.9);
+            background: rgba(10,31,68,0.9);
             display: flex;
+            flex-direction: column;
             align-items: center;
             justify-content: center;
-            flex-direction: column;
             z-index: 1000;
-            color: white;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s ease;
         }
 
-        .loading-overlay.hidden {
-            display: none;
+        .loading-overlay.show {
+            opacity: 1;
+            visibility: visible;
         }
 
         .spinner {
-            width: 50px;
-            height: 50px;
-            border: 4px solid rgba(255, 255, 255, 0.3);
+            width: 60px;
+            height: 60px;
+            border: 4px solid rgba(255,255,255,0.3);
             border-top: 4px solid #00ffcc;
             border-radius: 50%;
             animation: spin 1s linear infinite;
             margin-bottom: 20px;
+        }
+
+        .loading-text {
+            font-size: 1.2rem;
+            font-weight: 600;
+            text-align: center;
+        }
+
+        /* Error States */
+        .error-message {
+            background: rgba(255,107,107,0.2);
+            border: 1px solid rgba(255,107,107,0.5);
+            color: #ff6b6b;
+            padding: 15px 25px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            display: none;
+            max-width: 600px;
+            text-align: center;
+        }
+
+        /* Animations */
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
         }
 
         @keyframes spin {
@@ -222,493 +349,432 @@
             100% { transform: rotate(360deg); }
         }
 
-        .alert {
-            padding: 15px;
-            border-radius: 10px;
-            margin-bottom: 20px;
-            display: none;
-            max-width: 500px;
-            margin-left: auto;
-            margin-right: auto;
+        .character-card {
+            animation: fadeInUp 0.6s ease-out;
+            animation-fill-mode: both;
         }
 
-        .alert.error {
-            background: rgba(255, 107, 107, 0.2);
-            border: 1px solid rgba(255, 107, 107, 0.5);
-            color: #ff6b6b;
-        }
+        .character-card:nth-child(1) { animation-delay: 0.1s; }
+        .character-card:nth-child(2) { animation-delay: 0.2s; }
+        .character-card:nth-child(3) { animation-delay: 0.3s; }
+        .character-card:nth-child(4) { animation-delay: 0.4s; }
 
+        /* Responsive Design */
         @media (max-width: 768px) {
-            .menu-grid {
-                grid-template-columns: repeat(4, 1fr);
-                gap: 15px;
-                padding: 0 10px;
-            }
-
-            h3 {
-                font-size: 1.3rem;
-                margin-top: 15px;
+            .page-container {
+                padding: 15px;
             }
 
             .header {
-                flex-direction: column;
-                gap: 15px;
                 margin-bottom: 20px;
             }
 
             .logo img {
-                width: 60px;
-                height: 60px;
+                width: 80px;
             }
+
+            .main-title {
+                font-size: 2rem;
+            }
+
+            .subtitle {
+                font-size: 1rem;
+            }
+
+            .character-grid {
+                grid-template-columns: repeat(2, 1fr);
+                gap: 15px;
+                padding: 0 10px;
+            }
+
+            .character-card {
+                aspect-ratio: 3/4;
+            }
+
+            .user-info {
+                padding: 8px 15px;
+                font-size: 0.9rem;
+            }
+
+            .continue-btn {
+                padding: 15px 40px;
+                font-size: 16px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .character-grid {
+                grid-template-columns: repeat(2, 1fr);
+                gap: 10px;
+            }
+
+            .main-title {
+                font-size: 1.8rem;
+            }
+        }
+
+        /* Accessibility */
+        .character-card:focus {
+            outline: 3px solid #00ffcc;
+            outline-offset: 2px;
+        }
+
+        .continue-btn:focus {
+            outline: 3px solid rgba(0,255,204,0.5);
+            outline-offset: 2px;
+        }
+
+        /* Progress Indicator */
+        .progress-bar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 0%;
+            height: 3px;
+            background: linear-gradient(90deg, #00ffcc, #ff1493);
+            transition: width 0.3s ease;
+            z-index: 1001;
         }
     </style>
 </head>
 <body>
+    <!-- Progress Bar -->
+    <div class="progress-bar" id="progressBar"></div>
+
     <!-- Loading Overlay -->
-    <div class="loading-overlay hidden" id="loadingOverlay">
+    <div class="loading-overlay" id="loadingOverlay">
         <div class="spinner"></div>
-        <div id="loadingText">Loading...</div>
+        <div class="loading-text">Memuat karakter...</div>
     </div>
 
-    <div class="page">
+    <div class="page-container">
+        <!-- Header -->
         <div class="header">
-            <div class="logo">
-                <img src="/static/images/logo.png" alt="Logo" onclick="logout()">
+            <div class="logo" onclick="logout()">
+                <img src="/static/images/logo.png" alt="Platinum Cineplex">
             </div>
             <div class="user-info">
-                <div>
-                    <div class="user-name">Welcome, <span id="username">User</span></div>
-                    <div class="credit-display" id="creditDisplay">
-                        <i class="fas fa-coins"></i> Credits: <span id="creditCount">-</span>
-                    </div>
+                <div class="credit-display">
+                    <i class="fas fa-coins credit-icon"></i>
+                    <span id="userCredits">-</span> Credit
                 </div>
+                <div class="username" id="username">User</div>
             </div>
         </div>
 
-        <h3>PILIH KARAKTERMU</h3>
-
-        <!-- Credit Warning -->
-        <div class="credit-warning" id="creditWarning">
-            <h4><i class="fas fa-exclamation-triangle"></i> Credits Habis!</h4>
-            <p>Anda tidak memiliki credits untuk menggunakan fitur foto. Lakukan pembayaran untuk mendapatkan 3 credits dan mulai mengambil foto.</p>
-            <div>
-                <button class="payment-btn" onclick="goToPayment()">
-                    <i class="fas fa-credit-card"></i> Bayar Sekarang - Rp 5.000
-                </button>
-                <button class="skip-btn" onclick="goBack()">
-                    <i class="fas fa-arrow-left"></i> Kembali ke Dashboard
-                </button>
-            </div>
+        <!-- Title Section -->
+        <div class="title-section">
+            <h1 class="main-title">PILIH KARAKTERMU</h1>
+            <p class="subtitle">Pilih karakter favorit untuk transformasi AI yang menakjubkan</p>
         </div>
 
-        <div class="alert error" id="characterError"></div>
-        
-        <form id="characterForm">
-            <div class="menu-grid" id="characterGrid">
-                <!-- Characters will be loaded here -->
-            </div>
-            
-            <div class="selected-template" id="selectedTemplate">
-                <span id="selectedName"></span>
-            </div>
-            
-            <button type="button" class="continue-btn" id="continueBtn">
-                <i class="fas fa-camera"></i> Lanjut ke Kamera
+        <!-- Error Message -->
+        <div class="error-message" id="errorMessage"></div>
+
+        <!-- Character Grid -->
+        <div class="character-grid" id="characterGrid">
+            <!-- Characters will be loaded here dynamically -->
+        </div>
+
+        <!-- Continue Section -->
+        <div class="continue-section">
+            <button class="continue-btn" id="continueBtn">
+                <i class="fas fa-camera"></i>
+                Lanjut ke Kamera
             </button>
-        </form>
+        </div>
     </div>
 
     <script>
-        class CharacterManager {
+        class CharacterSelection {
             constructor() {
                 this.selectedCharacter = null;
-                this.currentUser = null;
-                this.token = localStorage.getItem('token');
-                this.visitCount = parseInt(localStorage.getItem('characterVisitCount')) || 0;
-                
+                this.characters = [];
+                this.userCredits = 0;
+                this.visitCount = 0;
+                this.idleTimeout = null;
                 this.init();
             }
 
             async init() {
-                try {
-                    // Show loading
-                    this.showLoading('Checking your account...');
-
-                    // Check authentication
-                    if (!this.checkAuth()) return;
-
-                    // Increment visit count
-                    this.updateVisitCount();
-
-                    // Load user data and check credits
-                    await this.loadUserData();
-
-                    // Check credits
-                    if (!this.checkCredits()) return;
-
-                    // Load characters
-                    await this.loadCharacters();
-
-                    this.hideLoading();
-                } catch (error) {
-                    console.error('Character manager initialization error:', error);
-                    this.showError('Gagal menginisialisasi halaman');
-                }
-            }
-
-            checkAuth() {
-                if (!this.token) {
-                    this.showError('Silakan login terlebih dahulu');
-                    setTimeout(() => {
-                        window.location.replace('/login');
-                    }, 2000);
-                    return false;
-                }
-                return true;
-            }
-
-            updateVisitCount() {
-                this.visitCount += 1;
-                localStorage.setItem('characterVisitCount', this.visitCount);
+                // Check authentication
+                this.checkAuthentication();
                 
-                // If user keeps returning here too many times, redirect to manipulasi
-                if (this.visitCount > 6) {
-                    this.showLoading('Redirecting to main menu...');
-                    setTimeout(() => {
-                        window.location.replace('/manipulasi');
-                    }, 1500);
-                    return false;
-                }
-                return true;
+                // Setup idle timeout
+                this.setupIdleTimeout();
+                
+                // Load user info
+                await this.loadUserInfo();
+                
+                // Load characters
+                await this.loadCharacters();
+                
+                // Setup event listeners
+                this.setupEventListeners();
+                
+                // Track visit count
+                this.trackVisitCount();
             }
 
-            async loadUserData() {
+            checkAuthentication() {
+                const token = localStorage.getItem('token');
+                if (!token) {
+                    window.location.replace('/login');
+                    return;
+                }
+            }
+
+            async loadUserInfo() {
                 try {
-                    this.showLoading('Loading your profile...');
-                    
+                    const token = localStorage.getItem('token');
                     const response = await fetch('/api/me', {
-                        headers: {'Authorization': `Bearer ${this.token}`}
+                        headers: {'Authorization': `Bearer ${token}`}
                     });
-
-                    if (!response.ok) {
-                        throw new Error('Failed to load user data');
-                    }
-
-                    const data = await response.json();
-                    if (data.success) {
-                        this.currentUser = data.user;
-                        this.updateUserDisplay();
-                        
-                        // Update localStorage dengan data terbaru
-                        localStorage.setItem('user', JSON.stringify(this.currentUser));
-                    } else {
-                        throw new Error('Invalid user data');
+                    
+                    if (response.ok) {
+                        const data = await response.json();
+                        if (data.success) {
+                            document.getElementById('username').textContent = data.user.username;
+                            this.userCredits = data.user.credit_balance || 0;
+                            document.getElementById('userCredits').textContent = this.userCredits;
+                        }
                     }
                 } catch (error) {
-                    console.error('Error loading user data:', error);
-                    this.showError('Gagal memuat data user');
-                    setTimeout(() => {
-                        window.location.replace('/login');
-                    }, 2000);
+                    console.error('Failed to load user info:', error);
                 }
-            }
-
-            updateUserDisplay() {
-                if (this.currentUser) {
-                    document.getElementById('username').textContent = this.currentUser.username;
-                    document.getElementById('creditCount').textContent = this.currentUser.credit_balance;
-                    
-                    const creditDisplay = document.getElementById('creditDisplay');
-                    if (this.currentUser.credit_balance <= 0) {
-                        creditDisplay.classList.add('low');
-                    } else {
-                        creditDisplay.classList.remove('low');
-                    }
-                }
-            }
-
-            checkCredits() {
-                if (!this.currentUser || this.currentUser.credit_balance < 1) {
-                    this.showCreditWarning();
-                    return false;
-                }
-                return true;
-            }
-
-            showCreditWarning() {
-                this.hideLoading();
-                document.getElementById('creditWarning').style.display = 'block';
-                document.getElementById('characterGrid').style.opacity = '0.3';
-                
-                // Disable all character items
-                document.querySelectorAll('.menu-item').forEach(item => {
-                    item.classList.add('disabled');
-                    item.onclick = () => {
-                        alert('Credits habis! Silakan lakukan pembayaran terlebih dahulu.');
-                        this.goToPayment();
-                    };
-                });
-
-                // Auto redirect ke payment setelah 10 detik
-                let redirectTimer = 10;
-                const redirectInterval = setInterval(() => {
-                    redirectTimer--;
-                    if (redirectTimer <= 0) {
-                        clearInterval(redirectInterval);
-                        this.goToPayment();
-                    }
-                }, 1000);
             }
 
             async loadCharacters() {
+                this.showLoading();
+                this.updateProgress(30);
+
                 try {
-                    this.showLoading('Loading characters...');
-                    
+                    const token = localStorage.getItem('token');
                     const response = await fetch('/api/templates', {
-                        headers: {'Authorization': `Bearer ${this.token}`}
+                        headers: {'Authorization': `Bearer ${token}`}
                     });
                     
+                    this.updateProgress(70);
                     const data = await response.json();
                     
                     if (data.success) {
-                        this.displayCharacters(data.templates);
+                        this.characters = data.templates;
+                        this.renderCharacters();
                     } else {
                         this.showError('Gagal memuat karakter');
                     }
                 } catch (error) {
                     this.showError('Koneksi gagal. Silakan coba lagi.');
-                    console.error('Load characters error:', error);
+                    console.error('Failed to load characters:', error);
+                } finally {
+                    this.updateProgress(100);
+                    setTimeout(() => this.hideLoading(), 500);
                 }
             }
 
-            displayCharacters(templates) {
+            renderCharacters() {
                 const grid = document.getElementById('characterGrid');
                 grid.innerHTML = '';
                 
-                if (templates.length === 0) {
-                    // Show demo templates if no templates available
-                    const demoTemplates = [
+                // Use demo templates if none available
+                if (this.characters.length === 0) {
+                    this.characters = [
                         { name: 'superhero.jpg', path: '/static/templates/superhero.jpg' },
                         { name: 'princess.jpg', path: '/static/templates/princess.jpg' },
                         { name: 'warrior.jpg', path: '/static/templates/warrior.jpg' },
                         { name: 'cartoon.jpg', path: '/static/templates/cartoon.jpg' }
                     ];
-                    templates = demoTemplates;
                 }
                 
-                templates.forEach((template, index) => {
-                    const menuItem = document.createElement('div');
-                    menuItem.className = 'menu-item';
-                    
-                    const characterName = template.name.replace(/\.[^/.]+$/, "").replace(/[-_]/g, ' ');
-                    
-                    // Check if user has credits
-                    const hasCredits = this.currentUser && this.currentUser.credit_balance > 0;
-                    
-                    menuItem.innerHTML = `
-                        <input type="radio" id="char${index}" name="character" value="${template.name}" style="display: none;">
-                        <label for="char${index}">
-                            <img src="${template.path}" alt="${characterName}" onerror="this.src='data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjE4MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjNjY3ZWVhIi8+PHRleHQgeD0iNTAlIiB5PSI1MCUiIGZvbnQtZmFtaWx5PSJBcmlhbCwgc2Fucy1zZXJpZiIgZm9udC1zaXplPSIxNiIgZmlsbD0iI2ZmZiIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZHk9Ii4zZW0iPiR7Y2hhcmFjdGVyTmFtZX08L3RleHQ+PC9zdmc+'">
-                            ${!hasCredits ? '<div class="credit-required">1 Credit</div>' : ''}
-                        </label>
-                    `;
-                    
-                    // Add click handler
-                    if (hasCredits) {
-                        menuItem.addEventListener('click', () => {
-                            this.selectCharacter(template.name, characterName);
-                        });
-                    } else {
-                        menuItem.classList.add('disabled');
-                        menuItem.addEventListener('click', () => {
-                            alert('Credits habis! Silakan lakukan pembayaran untuk menggunakan karakter ini.');
-                            this.goToPayment();
-                        });
-                    }
-                    
-                    grid.appendChild(menuItem);
+                this.characters.forEach((character, index) => {
+                    const card = this.createCharacterCard(character, index);
+                    grid.appendChild(card);
                 });
             }
 
-            selectCharacter(templateName, displayName) {
-                // Double check credits before selection
-                if (!this.currentUser || this.currentUser.credit_balance < 1) {
-                    alert('Credits habis! Silakan lakukan pembayaran terlebih dahulu.');
-                    this.goToPayment();
+            createCharacterCard(character, index) {
+                const characterName = character.name.replace(/\.[^/.]+$/, "").replace(/[-_]/g, ' ');
+                const card = document.createElement('div');
+                card.className = 'character-card';
+                card.tabIndex = 0;
+                card.setAttribute('data-character', character.name);
+                
+                card.innerHTML = `
+                    <img src="${character.path}" alt="${characterName}" class="character-image" 
+                         onerror="this.src='data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjI0MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjNjY3ZWVhIi8+PHRleHQgeD0iNTAlIiB5PSI1MCUiIGZvbnQtZmFtaWx5PSJBcmlhbCwgc2Fucy1zZXJpZiIgZm9udC1zaXplPSIxNiIgZmlsbD0iI2ZmZiIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZHk9Ii4zZW0iPiR7Y2hhcmFjdGVyTmFtZX08L3RleHQ+PC9zdmc+'">
+                    <div class="character-overlay">
+                        <div class="character-name">${characterName}</div>
+                        <div class="character-description">Transformasi menjadi ${characterName.toLowerCase()}</div>
+                    </div>
+                    <div class="selection-indicator">
+                        <i class="fas fa-check"></i>
+                    </div>
+                `;
+                
+                // Add click event
+                card.addEventListener('click', () => this.selectCharacter(character, card));
+                card.addEventListener('keydown', (e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault();
+                        this.selectCharacter(character, card);
+                    }
+                });
+
+                return card;
+            }
+
+            selectCharacter(character, cardElement) {
+                // Check credits
+                if (this.userCredits < 1) {
+                    this.showError('Credit tidak mencukupi. Silakan lakukan pembayaran terlebih dahulu.');
+                    setTimeout(() => {
+                        window.location.replace('/payment');
+                    }, 2000);
                     return;
                 }
 
+                // Remove previous selection
+                document.querySelectorAll('.character-card').forEach(card => {
+                    card.classList.remove('selected');
+                });
+                
+                // Select new character
+                cardElement.classList.add('selected');
+                
                 this.selectedCharacter = {
-                    name: templateName,
-                    displayName: displayName
+                    name: character.name,
+                    displayName: character.name.replace(/\.[^/.]+$/, "").replace(/[-_]/g, ' '),
+                    path: character.path
                 };
                 
-                // Show selected template
-                const selectedTemplate = document.getElementById('selectedTemplate');
-                const selectedName = document.getElementById('selectedName');
+                // Show continue button
                 const continueBtn = document.getElementById('continueBtn');
+                continueBtn.classList.add('visible');
                 
-                selectedName.textContent = displayName;
-                selectedTemplate.style.display = 'block';
-                continueBtn.style.display = 'inline-block';
-
-                // Store selected character
-                localStorage.setItem('selectedCharacter', JSON.stringify(this.selectedCharacter));
-
-                // Auto-proceed to camera with final credit check
+                // Auto-continue after 2 seconds
                 setTimeout(() => {
-                    this.proceedToCamera();
-                }, 500);
+                    if (this.selectedCharacter) {
+                        this.continueToCamera();
+                    }
+                }, 2000);
+
+                // Reset idle timeout
+                this.resetIdleTimeout();
             }
 
-            async proceedToCamera() {
+            continueToCamera() {
                 if (!this.selectedCharacter) return;
+                
+                // Store selected character
+                localStorage.setItem('selectedCharacter', JSON.stringify(this.selectedCharacter));
+                
+                // Show loading and redirect
+                this.showLoading('Menyiapkan kamera...');
+                
+                setTimeout(() => {
+                    window.location.replace('/camera');
+                }, 1500);
+            }
 
-                // Final credit check before proceeding
-                try {
-                    this.showLoading('Checking credits before proceeding...');
-                    
-                    const response = await fetch('/api/me', {
-                        headers: {'Authorization': `Bearer ${this.token}`}
-                    });
+            setupEventListeners() {
+                // Continue button
+                document.getElementById('continueBtn').addEventListener('click', () => {
+                    this.continueToCamera();
+                });
 
-                    if (response.ok) {
-                        const data = await response.json();
-                        if (data.success && data.user.credit_balance >= 1) {
-                            // Credits OK, proceed to camera
-                            this.showLoading('Redirecting to camera...');
-                            setTimeout(() => {
-                                window.location.replace('/camera');
-                            }, 1000);
-                        } else {
-                            // Credits habis, redirect to payment
-                            this.showLoading('Credits insufficient, redirecting to payment...');
-                            setTimeout(() => {
-                                this.goToPayment();
-                            }, 1500);
-                        }
-                    } else {
-                        throw new Error('Failed to verify credits');
-                    }
-                } catch (error) {
-                    console.error('Credit verification error:', error);
-                    this.showError('Gagal memverifikasi credits');
-                    setTimeout(() => {
-                        this.goToPayment();
-                    }, 2000);
+                // Activity tracking for idle timeout
+                ['mousemove', 'mousedown', 'keypress', 'touchstart'].forEach(evt => {
+                    document.addEventListener(evt, () => this.resetIdleTimeout());
+                });
+            }
+
+            setupIdleTimeout() {
+                this.resetIdleTimeout();
+            }
+
+            resetIdleTimeout() {
+                clearTimeout(this.idleTimeout);
+                this.idleTimeout = setTimeout(() => {
+                    window.location.replace('/manipulasi');
+                }, 60000); // 60 seconds
+            }
+
+            trackVisitCount() {
+                this.visitCount = parseInt(localStorage.getItem('characterVisitCount')) || 0;
+                this.visitCount += 1;
+                localStorage.setItem('characterVisitCount', this.visitCount);
+
+                // Redirect after 6 visits
+                if (this.visitCount > 6) {
+                    window.location.replace('/manipulasi');
                 }
             }
 
-            goToPayment() {
-                window.location.href = '/payment';
-            }
-
-            goBack() {
-                window.location.href = '/dashboard';
-            }
-
-            showLoading(text = 'Loading...') {
+            showLoading(text = 'Memuat karakter...') {
                 const overlay = document.getElementById('loadingOverlay');
-                const textElement = document.getElementById('loadingText');
-                textElement.textContent = text;
-                overlay.classList.remove('hidden');
+                const loadingText = overlay.querySelector('.loading-text');
+                loadingText.textContent = text;
+                overlay.classList.add('show');
             }
 
             hideLoading() {
-                document.getElementById('loadingOverlay').classList.add('hidden');
+                document.getElementById('loadingOverlay').classList.remove('show');
+            }
+
+            updateProgress(percent) {
+                document.getElementById('progressBar').style.width = percent + '%';
             }
 
             showError(message) {
-                const errorAlert = document.getElementById('characterError');
-                errorAlert.textContent = message;
-                errorAlert.style.display = 'block';
+                const errorElement = document.getElementById('errorMessage');
+                errorElement.textContent = message;
+                errorElement.style.display = 'block';
                 
                 setTimeout(() => {
-                    errorAlert.style.display = 'none';
+                    errorElement.style.display = 'none';
                 }, 5000);
             }
         }
 
-        // Global functions
-        function goToPayment() {
-            window.location.href = '/payment';
-        }
-
-        function goBack() {
-            window.location.href = '/dashboard';
-        }
-
+        // Logout function
         async function logout() {
             try {
                 const token = localStorage.getItem('token');
-
                 if (token) {
-                    try {
-                        await fetch('/api/logout', {
-                            method: 'POST',
-                            headers: {
-                                'Authorization': `Bearer ${token}`
-                            }
-                        });
-                    } catch (error) {
-                        console.log('Logout API not available, proceeding with local logout');
-                    }
+                    await fetch('/api/logout', {
+                        method: 'POST',
+                        headers: {'Authorization': `Bearer ${token}`}
+                    });
                 }
-
                 localStorage.removeItem('token');
                 localStorage.removeItem('user');
                 localStorage.removeItem('selectedCharacter');
-                localStorage.removeItem('characterVisitCount');
-
-                alert('Logout berhasil!');
-                window.location.href = '/login';
+                window.location.replace('/login');
             } catch (error) {
                 console.error('Logout error:', error);
                 localStorage.clear();
-                window.location.href = '/login';
+                window.location.replace('/login');
             }
         }
 
-        // Initialize character manager
-        let characterManager;
-        document.addEventListener('DOMContentLoaded', function() {
-            // Clear previous selected character for fresh selection
+        // Initialize when page loads
+        document.addEventListener('DOMContentLoaded', () => {
+            // Clear previous selections
             localStorage.removeItem('selectedCharacter');
             
-            characterManager = new CharacterManager();
-
-            // Setup auto-redirect timer untuk idle users
-            let idleTimeout;
-            const idleLimit = 60000; // 60 seconds
-
-            function resetIdleTimer() {
-                clearTimeout(idleTimeout);
-                idleTimeout = setTimeout(() => {
-                    if (characterManager) {
-                        characterManager.showLoading('Session timeout, redirecting...');
-                        setTimeout(() => {
-                            window.location.replace('/dashboard');
-                        }, 2000);
-                    }
-                }, idleLimit);
-            }
-
-            // Events to detect activity
-            ['mousemove', 'mousedown', 'keypress', 'touchstart'].forEach(evt => {
-                document.addEventListener(evt, resetIdleTimer);
-            });
-
-            // Start idle timer
-            resetIdleTimer();
+            // Initialize character selection
+            new CharacterSelection();
         });
 
-        // Handle page visibility changes
-        document.addEventListener('visibilitychange', function() {
-            if (!document.hidden && characterManager) {
-                // Refresh user data when page becomes visible
-                characterManager.loadUserData();
-            }
-        });
+        // Handle page refresh
+        if (!sessionStorage.getItem('refreshed')) {
+            sessionStorage.setItem('refreshed', 'true');
+            setTimeout(() => {
+                window.location.reload();
+            }, 1000);
+        } else {
+            sessionStorage.removeItem('refreshed');
+        }
     </script>
 </body>
 </html>

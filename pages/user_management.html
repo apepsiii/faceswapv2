@@ -403,24 +403,23 @@
     </style>
 </head>
 <body>
-    <!-- Sidebar Navigation -->
     <div class="sidebar">
         <div class="logo">
             <i class="fas fa-crown"></i> Admin Panel
         </div>
         <nav>
-            <a href="/dashboard_admin" class="nav-item">
+            <a href="dashboard_admin" class="nav-item active" data-page="dashboard">
                 <i class="fas fa-chart-line"></i> Dashboard
             </a>
-            <a href="#" class="nav-item active">
+            <a href="#" class="nav-item" data-page="users">
                 <i class="fas fa-users"></i> User Management
             </a>
-            <a href="/settings_admin" class="nav-item">
-                <i class="fas fa-cog"></i> Settings
+            <a href="/transaction_history" class="nav-item" data-page="Transactions">
+                <i class="fas fa-receipt"></i> Transactions
             </a>
-            <a href="/dashboard" class="nav-item">
+            <!-- <a href="/dashboard" class="nav-item">
                 <i class="fas fa-user"></i> User View
-            </a>
+            </a> -->
         </nav>
         <button class="logout-btn" onclick="logout()">
             <i class="fas fa-sign-out-alt"></i> Logout
@@ -486,6 +485,7 @@
                 
                 await this.loadUsers();
                 this.setupEventListeners();
+                this.loadStats();
             }
 
             checkAuth() {
@@ -508,7 +508,7 @@
                 usersGrid.style.display = 'none';
 
                 try {
-                    const response = await fetch('/api/admin/users', {
+                    const response = await fetch('/api/admin/users/list', {
                         headers: {
                             'Authorization': `Bearer ${localStorage.getItem('token')}`
                         }
@@ -764,6 +764,20 @@
                     currency: 'IDR',
                     minimumFractionDigits: 0
                 }).format(amount || 0);
+            }
+
+            loadStats() {
+                fetch('/api/admin/user_management_stats', {
+                    headers: { 'Authorization': 'Bearer ' + localStorage.getItem('token') }
+                })
+                .then(res => res.json())
+                .then(data => {
+                    if (data.success) {
+                        document.getElementById('faceswapCount').textContent = data.faceswap_count;
+                        document.getElementById('arPhotoCount').textContent = data.arphoto_count;
+                        document.getElementById('totalRevenue').textContent = 'Rp ' + data.total_revenue.toLocaleString('id-ID');
+                    }
+                });
             }
         }
 

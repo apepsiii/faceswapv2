@@ -182,7 +182,7 @@ class DatabaseManager:
             
             # Insert default settings if not exist
             default_settings = [
-                ('price_per_3_photos', '8', 'Harga untuk 3 foto'),
+                ('price_per_3_photos', '1', 'Harga untuk 3 foto'),
                 ('credits_per_payment', '3', 'Credit per pembayaran'),
                 ('photos_per_session', '3', 'Foto per session'),
                 ('admin_username', 'admin', 'Default admin username'),
@@ -218,6 +218,92 @@ class DatabaseManager:
 
     def get_connection(self):
         return sqlite3.connect(self.db_path)
+    
+
+def create_site_users():
+    """Create 18 site users with default passwords"""
+    
+    # 18 site locations
+    site_users = [
+        'SLO', 'MGL', 'SDO', 'PLP', 'BRJ', 'LHT', 
+        'KLK', 'MJN', 'KBN', 'CMG', 'PBN', 'BAT', 
+        'SRG', 'BLO', 'BRU', 'BSD', 'CBT'
+    ]
+    
+    # Add existing users that should be included
+    site_users.extend(['demo'])  # Keep demo user
+    
+    logger.info(f"🏪 Creating {len(site_users)} site users...")
+    
+    try:
+        with auth_service.db_manager.get_connection() as conn:
+            created_count = 0
+            
+            for site_code in site_users:
+                username = site_code.lower()
+                password = f"{site_code.lower()}123"  # Standard password pattern
+                
+                # Check if user already exists
+                cursor = conn.execute("SELECT id FROM users WHERE username = ?", (username,))
+                if cursor.fetchone():
+                    logger.info(f"   👤 User {username} already exists, skipping...")
+                    continue
+                
+                # Create user using auth service
+                try:
+                    # Hash password using same method as auth service
+                    import hashlib
+                    import secrets
+                    
+                    salt = secrets.token_hex(32)
+                    password_hash = hashlib.pbkdf2_hmac(
+                        'sha256',
+                        password.encode('utf-8'),
+                        salt.encode('utf-8'),
+                        100000
+                    ).hex()
+                    
+                    # Insert user
+                    conn.execute("""
+                        INSERT INTO users (username, password_hash, salt, role, credit_balance, created_at)
+                        VALUES (?, ?, ?, 'user', 0, CURRENT_TIMESTAMP)
+                    """, (username, password_hash, salt))
+                    
+                    created_count += 1
+                    logger.info(f"   ✅ Created site user: {username} (password: {password})")
+                    
+                    # Create user-specific directories
+                    import os
+                    from pathlib import Path
+                    
+                    directories = [
+                        f"static/results/{username}",
+                        f"static/ar_results/{username}"
+                    ]
+                    
+                    for directory in directories:
+                        Path(directory).mkdir(parents=True, exist_ok=True)
+                    
+                except Exception as e:
+                    logger.error(f"   ❌ Failed to create user {username}: {e}")
+            
+            conn.commit()
+            logger.info(f"✅ Site user creation completed: {created_count} new users created")
+            
+            return {
+                "success": True,
+                "created_count": created_count,
+                "total_sites": len(site_users),
+                "message": f"Created {created_count} new site users"
+            }
+            
+    except Exception as e:
+        logger.error(f"❌ Error creating site users: {e}")
+        return {
+            "success": False,
+            "error": str(e)
+        }
+
 
 # =============================================
 # AUTHENTICATION SERVICE
@@ -743,6 +829,12 @@ async def result_page():
     """Serve result page"""
     return serve_html_page("result")
 
+@app.get("/transaction_history", response_class=HTMLResponse)
+async def transaction_history_page(request: Request):
+    with open("pages/transaction_history.html", "r", encoding="utf-8") as f:
+        html_content = f.read()
+    return HTMLResponse(content=html_content)
+
 # =============================================
 # AUTHENTICATION API ROUTES
 # =============================================
@@ -790,7 +882,7 @@ async def generate_qris_token(current_user = Depends(get_current_user_optional))
             conn.execute("""
                 INSERT INTO transactions (user_id, order_id, amount, credits_added, status)
                 VALUES (?, ?, ?, ?, ?)
-            """, (user_id, order_id, 8, 3, "pending"))
+            """, (user_id, order_id, 1, 3, "pending"))
             conn.commit()
         
         payload = {
@@ -1371,85 +1463,75 @@ async def admin_required(current_user = Depends(get_current_user)):
 
 @app.get("/api/admin/dashboard/stats")
 async def get_dashboard_stats(admin_user = Depends(admin_required)):
-    """Get dashboard statistics including today's photo counts"""
+    """Get dashboard statistics with REAL revenue calculation from transactions table"""
     try:
         with auth_service.db_manager.get_connection() as conn:
             # Basic counts
-            cursor = conn.execute("SELECT COUNT(*) FROM users WHERE role = 'user'")
-            total_users = cursor.fetchone()[0] or 0
+            total_users = conn.execute("SELECT COUNT(*) FROM users WHERE role = 'user'").fetchone()[0]
             
-            # Total photos from face_swap_history (existing table)
-            cursor = conn.execute("SELECT COUNT(*) FROM face_swap_history")
-            total_face_swap = cursor.fetchone()[0] or 0
+            # Count face swap dari face_swap_history table
+            total_face_swap = conn.execute("SELECT COUNT(*) FROM face_swap_history").fetchone()[0]
             
-            # Count files in static/ar_results untuk AR photos
-            import os
-            ar_results_path = "static/ar_results"
-            total_ar_photos = 0
-            if os.path.exists(ar_results_path):
-                ar_files = [f for f in os.listdir(ar_results_path) 
-                           if f.lower().endswith(('.png', '.jpg', '.jpeg'))]
-                total_ar_photos = len(ar_files)
-            
-            # Revenue from transactions table (if exists)
+            # Count AR photos dari direktori atau database jika ada table photos
             try:
-                cursor = conn.execute("SELECT COALESCE(SUM(amount), 0) FROM transactions WHERE status = 'settlement'")
-                total_revenue = cursor.fetchone()[0] or 0
+                total_ar_photos = conn.execute("SELECT COUNT(*) FROM photos WHERE photo_type = 'ar_photo'").fetchone()[0]
             except sqlite3.OperationalError:
-                total_revenue = 0
+                # Fallback jika table photos belum ada
+                total_ar_photos = count_ar_files_from_directory()
             
-            # TODAY'S STATS - Foto Face Swap hari ini
+            # *** PERBAIKAN: Real revenue HANYA dari transactions table ***
+            total_revenue = conn.execute("""
+                SELECT COALESCE(SUM(amount), 0) 
+                FROM transactions 
+                WHERE status = 'settlement'
+            """).fetchone()[0]
+            
+            # Today's stats
             today = datetime.now().strftime('%Y-%m-%d')
-            cursor = conn.execute("""
+            
+            # Today face swap
+            today_face_swap = conn.execute("""
                 SELECT COUNT(*) FROM face_swap_history 
                 WHERE DATE(created_at) = ?
-            """, (today,))
-            today_face_swap = cursor.fetchone()[0] or 0
+            """, (today,)).fetchone()[0]
             
-            # TODAY'S STATS - Foto AR hari ini (dari file yang dibuat hari ini)
-            today_ar_photos = 0
-            if os.path.exists(ar_results_path):
-                import time
-                today_timestamp = time.mktime(datetime.now().date().timetuple())
-                tomorrow_timestamp = today_timestamp + 86400  # +24 hours
-                
-                for filename in os.listdir(ar_results_path):
-                    if filename.lower().endswith(('.png', '.jpg', '.jpeg')):
-                        file_path = os.path.join(ar_results_path, filename)
-                        file_time = os.path.getctime(file_path)
-                        if today_timestamp <= file_time < tomorrow_timestamp:
-                            today_ar_photos += 1
-            
-            # Revenue dan transactions hari ini
+            # Today AR photos
             try:
-                cursor = conn.execute("""
-                    SELECT COALESCE(SUM(amount), 0), COUNT(*) FROM transactions 
-                    WHERE status = 'settlement' AND DATE(settled_at) = ?
-                """, (today,))
-                result = cursor.fetchone()
-                today_revenue = result[0] or 0
-                today_transactions = result[1] or 0
+                today_ar_photos = conn.execute("""
+                    SELECT COUNT(*) FROM photos 
+                    WHERE photo_type = 'ar_photo' AND DATE(created_at) = ?
+                """, (today,)).fetchone()[0]
             except sqlite3.OperationalError:
-                today_revenue = 0
-                today_transactions = 0
+                today_ar_photos = 0
+            
+            # *** PERBAIKAN: Today revenue dari transactions yang settled hari ini ***
+            cursor = conn.execute("""
+                SELECT COALESCE(SUM(amount), 0), COUNT(*) 
+                FROM transactions 
+                WHERE status = 'settlement' 
+                AND DATE(settled_at) = ?
+            """, (today,))
+            result = cursor.fetchone()
+            today_revenue = result[0] or 0
+            today_transactions = result[1] or 0
             
             return {
                 "success": True,
                 "total_users": total_users,
                 "total_face_swap": total_face_swap,
                 "total_ar_photos": total_ar_photos,
-                "total_revenue": total_revenue,
+                "total_revenue": total_revenue,  # Real revenue dari SUM(amount) transactions
                 "today_stats": {
                     "face_swap": today_face_swap,
                     "ar_photos": today_ar_photos,
-                    "revenue": today_revenue,
+                    "revenue": today_revenue,  # Real revenue hari ini
                     "transactions": today_transactions
                 }
             }
     
     except Exception as e:
         logger.error(f"Error getting dashboard stats: {e}")
-        # Return default data instead of error
+        # Return default data pada error
         return {
             "success": True,
             "total_users": 0,
@@ -1464,17 +1546,83 @@ async def get_dashboard_stats(admin_user = Depends(admin_required)):
             }
         }
     
+@app.get("/api/admin/dashboard/photo-activity-7days")
+async def get_photo_activity_7days(admin_user = Depends(admin_required)):
+    """Get photo activity for last 7 days"""
+    try:
+        with auth_service.db_manager.get_connection() as conn:
+            activity_data = []
+            labels = []
+            
+            for i in range(7):
+                date = (datetime.now() - timedelta(days=6-i)).strftime('%Y-%m-%d')
+                day_name = (datetime.now() - timedelta(days=6-i)).strftime('%a')
+                
+                # Count face swap dari history
+                face_swap_count = conn.execute("""
+                    SELECT COUNT(*) FROM face_swap_history 
+                    WHERE DATE(created_at) = ?
+                """, (date,)).fetchone()[0]
+                
+                # Count AR photos
+                try:
+                    ar_photos_count = conn.execute("""
+                        SELECT COUNT(*) FROM photos 
+                        WHERE photo_type = 'ar_photo' AND DATE(created_at) = ?
+                    """, (date,)).fetchone()[0]
+                except sqlite3.OperationalError:
+                    ar_photos_count = 0
+                
+                labels.append(day_name)
+                activity_data.append({
+                    "date": date,
+                    "day": day_name,
+                    "face_swap": face_swap_count,
+                    "ar_photos": ar_photos_count,
+                    "total": face_swap_count + ar_photos_count
+                })
+            
+            return {
+                "success": True,
+                "labels": labels,
+                "data": activity_data,
+                "period": "7_days"
+            }
+    
+    except Exception as e:
+        logger.error(f"Error getting photo activity: {e}")
+        return {
+            "success": False,
+            "error": str(e),
+            "labels": [],
+            "data": []
+        }
+    
+def count_ar_files_from_directory():
+    """Helper function to count AR files from directory if table not available"""
+    try:
+        ar_results_path = Path("static/ar_results")
+        if ar_results_path.exists():
+            count = 0
+            for user_folder in ar_results_path.iterdir():
+                if user_folder.is_dir():
+                    count += len([f for f in user_folder.iterdir() if f.is_file()])
+            return count
+        return 0
+    except Exception:
+        return 0
+    
 @app.get("/api/admin/dashboard/activity-chart")
 async def get_activity_chart(period: str = "daily", admin_user = Depends(admin_required)):
-    """Get activity chart data for photo usage"""
+    """Get activity chart data for photo usage - UPDATED FOR 7 DAYS"""
     try:
         with auth_service.db_manager.get_connection() as conn:
             if period == "daily":
-                # Data 7 hari terakhir
+                # *** PERUBAHAN: Data 7 hari terakhir (bukan 30 hari) ***
                 activity_data = []
                 labels = []
                 
-                for i in range(7):
+                for i in range(7):  # Changed from previous implementation
                     date = (datetime.now() - timedelta(days=6-i)).strftime('%Y-%m-%d')
                     day_name = (datetime.now() - timedelta(days=6-i)).strftime('%a')
                     
@@ -1483,73 +1631,55 @@ async def get_activity_chart(period: str = "daily", admin_user = Depends(admin_r
                         SELECT COUNT(*) FROM face_swap_history 
                         WHERE DATE(created_at) = ?
                     """, (date,))
-                    face_swap_count = cursor.fetchone()[0] or 0
+                    face_swap_count = cursor.fetchone()[0]
                     
-                    # Count AR photos dari file system (simplified)
-                    ar_count = 0
-                    ar_results_path = "static/ar_results"
-                    if os.path.exists(ar_results_path):
-                        import time
-                        day_start = time.mktime(datetime.strptime(date, '%Y-%m-%d').timetuple())
-                        day_end = day_start + 86400
-                        
-                        for filename in os.listdir(ar_results_path):
-                            if filename.lower().endswith(('.png', '.jpg', '.jpeg')):
-                                file_path = os.path.join(ar_results_path, filename)
-                                try:
-                                    file_time = os.path.getctime(file_path)
-                                    if day_start <= file_time < day_end:
-                                        ar_count += 1
-                                except:
-                                    pass
+                    # Count AR photos (jika table photos tersedia)
+                    try:
+                        cursor = conn.execute("""
+                            SELECT COUNT(*) FROM photos 
+                            WHERE photo_type = 'ar_photo' AND DATE(created_at) = ?
+                        """, (date,))
+                        ar_count = cursor.fetchone()[0]
+                    except sqlite3.OperationalError:
+                        ar_count = 0
                     
                     labels.append(day_name)
                     activity_data.append({
                         "date": date,
                         "face_swap": face_swap_count,
-                        "ar_photo": ar_count
+                        "ar_photos": ar_count,
+                        "total": face_swap_count + ar_count
                     })
                 
                 return {
                     "success": True,
-                    "period": "daily",
+                    "period": "7_days",
                     "labels": labels,
-                    "data": activity_data
+                    "datasets": [
+                        {
+                            "label": "Face Swap",
+                            "data": [item["face_swap"] for item in activity_data],
+                            "backgroundColor": "rgba(102, 126, 234, 0.6)",
+                            "borderColor": "rgba(102, 126, 234, 1)",
+                            "borderWidth": 2
+                        },
+                        {
+                            "label": "AR Photos", 
+                            "data": [item["ar_photos"] for item in activity_data],
+                            "backgroundColor": "rgba(240, 147, 251, 0.6)",
+                            "borderColor": "rgba(240, 147, 251, 1)", 
+                            "borderWidth": 2
+                        }
+                    ]
                 }
-                
-            elif period == "weekly":
-                # Data 4 minggu terakhir (simplified)
-                labels = ['Week 1', 'Week 2', 'Week 3', 'Week 4']
-                activity_data = [
-                    {"face_swap": 45, "ar_photo": 32},
-                    {"face_swap": 52, "ar_photo": 28},
-                    {"face_swap": 38, "ar_photo": 41},
-                    {"face_swap": 67, "ar_photo": 35}
-                ]
-                
-                return {
-                    "success": True,
-                    "period": "weekly", 
-                    "labels": labels,
-                    "data": activity_data
-                }
+            
+            return {"success": False, "error": "Invalid period"}
     
     except Exception as e:
         logger.error(f"Error getting activity chart: {e}")
-        # Return demo data
         return {
-            "success": True,
-            "period": period,
-            "labels": ['Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab', 'Min'],
-            "data": [
-                {"face_swap": 8, "ar_photo": 5},
-                {"face_swap": 12, "ar_photo": 8},
-                {"face_swap": 15, "ar_photo": 10},
-                {"face_swap": 9, "ar_photo": 6},
-                {"face_swap": 18, "ar_photo": 12},
-                {"face_swap": 22, "ar_photo": 15},
-                {"face_swap": 16, "ar_photo": 11}
-            ]
+            "success": False,
+            "error": str(e)
         }
     
 @app.get("/api/admin/dashboard/user-status")
@@ -1593,6 +1723,398 @@ async def get_user_status_chart(admin_user = Depends(admin_required)):
                 "new_today": 2,
                 "total": 18
             }
+        }
+
+@app.post("/api/admin/create-site-users")
+async def create_site_users_endpoint(admin_user = Depends(admin_required)):
+    """API endpoint to create all 18 site users"""
+    return create_site_users()
+
+@app.get("/api/admin/users/list")
+async def get_users_list(admin_user = Depends(admin_required)):
+    """Get all users list without credits column (for Day 2)"""
+    try:
+        with auth_service.db_manager.get_connection() as conn:
+            # Get users with revenue calculation (not credits)
+            cursor = conn.execute("""
+                SELECT 
+                    u.id,
+                    u.username,
+                    u.role,
+                    u.created_at,
+                    u.last_login,
+                    u.is_active,
+                    COUNT(fsh.id) as total_face_swap,
+                    COALESCE(SUM(t.amount), 0) as total_revenue,
+                    COUNT(t.id) as total_transactions
+                FROM users u
+                LEFT JOIN face_swap_history fsh ON u.id = fsh.user_id
+                LEFT JOIN transactions t ON u.id = t.user_id AND t.status = 'settlement'
+                WHERE u.role = 'user'
+                GROUP BY u.id, u.username, u.role, u.created_at, u.last_login, u.is_active
+                ORDER BY u.username
+            """)
+            
+            users = []
+            for row in cursor.fetchall():
+                user_id, username, role, created_at, last_login, is_active, face_swap_count, revenue, tx_count = row
+                
+                # Count AR photos if photos table exists
+                try:
+                    ar_cursor = conn.execute("""
+                        SELECT COUNT(*) FROM photos 
+                        WHERE user_id = ? AND photo_type = 'ar_photo'
+                    """, (user_id,))
+                    ar_photos_count = ar_cursor.fetchone()[0]
+                except sqlite3.OperationalError:
+                    ar_photos_count = 0
+                
+                total_photos = face_swap_count + ar_photos_count
+                
+                users.append({
+                    "id": user_id,
+                    "username": username.upper(),  # Display in uppercase for site codes
+                    "role": role,
+                    "created_at": created_at,
+                    "last_login": last_login,
+                    "is_active": bool(is_active),
+                    "total_face_swap": face_swap_count,
+                    "total_ar_photos": ar_photos_count,
+                    "total_photos": total_photos,
+                    "estimated_revenue": revenue,
+                    "total_transactions": tx_count,
+                    # NOTE: credit_balance deliberately excluded for Day 2
+                    "performance_status": "active" if total_photos > 0 else "inactive"
+                })
+            
+            return {
+                "success": True,
+                "users": users,
+                "count": len(users),
+                "hide_credits": True  # Flag for frontend to hide credits column
+            }
+    
+    except Exception as e:
+        logger.error(f"Error getting users list: {e}")
+        return {
+            "success": False,
+            "error": str(e),
+            "users": [],
+            "count": 0
+        }
+    
+        # Filter periode
+        where_clause = "WHERE t.status = 'settlement'"
+        params = []
+        if period == "this_month":
+            where_clause += " AND strftime('%Y-%m', t.created_at) = ?"
+            params.append(datetime.now().strftime("%Y-%m"))
+        elif period == "this_week":
+            start_week = (datetime.now() - timedelta(days=datetime.now().weekday())).strftime("%Y-%m-%d")
+            where_clause += " AND date(t.created_at) >= ?"
+            params.append(start_week)
+        # Ambil revenue per site
+        cursor = conn.execute(f"""
+            SELECT u.username as site, SUM(t.amount) as revenue, COUNT(t.id) as transactions,
+                   (SELECT COUNT(*) FROM faceswap_photos WHERE user_id = u.id) +
+                   (SELECT COUNT(*) FROM ar_photos WHERE user_id = u.id) as photos
+            FROM transactions t
+            LEFT JOIN users u ON t.user_id = u.id
+            {where_clause}
+            GROUP BY t.user_id
+            ORDER BY revenue DESC
+        """, params)
+        data = []
+        labels = []
+        revenues = []
+        colors = []
+        for row in cursor.fetchall():
+            labels.append(row[0] or "Unknown")
+            revenues.append(row[1] or 0)
+            colors.append("#667eea")
+            data.append({
+                "site": row[0] or "Unknown",
+                "revenue": row[1] or 0,
+                "revenue_formatted": f"Rp {(row[1] or 0):,}",
+                "transactions": row[2] or 0,
+                "photos": row[3] or 0
+            })
+        summary = {
+            "total_sites": len(labels),
+            "active_sites": sum(1 for r in revenues if r > 0),
+            "average_revenue_per_site": int(sum(revenues) / len(revenues)) if revenues else 0
+        }
+        return {
+            "success": True,
+            "labels": labels,
+            "revenues": revenues,
+            "colors": colors,
+            "data": data,
+            "summary": summary,
+            "chart_config": {"title": "Pendapatan Per Site"}
+        }
+@app.get("/api/admin/users/{user_id}/details")
+async def get_user_details(user_id: int, admin_user = Depends(admin_required)):
+    """Get detailed statistics and photos for a specific user."""
+    try:
+        with auth_service.db_manager.get_connection() as conn:
+            # Get user data
+            cursor = conn.execute("""
+                SELECT id, username, role, credit_balance, created_at, last_login, is_active
+                FROM users WHERE id = ?
+            """, (user_id,))
+            
+            user_data = cursor.fetchone()
+            
+            if not user_data:
+                raise HTTPException(status_code=404, detail="User not found")
+            
+            username = user_data[1]
+            
+            # Get face swap history
+            cursor = conn.execute("""
+                SELECT template_name, result_filename, created_at
+                FROM face_swap_history
+                WHERE user_id = ?
+                ORDER BY created_at DESC
+                LIMIT 50
+            """, (user_id,))
+            
+            face_swap_history = []
+            for row in cursor.fetchall():
+                face_swap_history.append({
+                    "template_name": row[0],
+                    "filename": row[1],
+                    "created_at": row[2],
+                    "type": "face_swap"
+                })
+            
+            # Get AR photos from folder
+            ar_history = []
+            user_ar_folder = "static/ar_results"
+            if os.path.exists(user_ar_folder):
+                import time
+                ar_files = [f for f in os.listdir(user_ar_folder)
+                           if f.startswith(username) and f.lower().endswith(('.png', '.jpg', '.jpeg'))]
+                
+                for filename in ar_files:
+                    file_path = os.path.join(user_ar_folder, filename)
+                    file_time = os.path.getctime(file_path)
+                    created_at = datetime.fromtimestamp(file_time).strftime('%Y-%m-%d %H:%M:%S')
+                    
+                    ar_history.append({
+                        "template_name": "AR Photo",
+                        "filename": filename,
+                        "created_at": created_at,
+                        "type": "ar_photo"
+                    })
+            
+            # Combine and sort by date
+            all_photos = face_swap_history + ar_history
+            all_photos.sort(key=lambda x: x['created_at'], reverse=True)
+            
+            # Calculate statistics
+            total_photos = len(all_photos)
+            face_swap_count = len(face_swap_history)
+            ar_photos_count = len(ar_history)
+            
+            # Revenue calculation
+            cursor = conn.execute("SELECT SUM(amount) FROM transactions WHERE user_id = ? AND status = 'settlement'", (user_id,))
+            estimated_revenue = cursor.fetchone()[0] or 0
+            
+            # Activity by day (last 30 days)
+            activity_by_day = {}
+            for photo in all_photos:
+                date = photo['created_at'][:10]  # YYYY-MM-DD
+                if date not in activity_by_day:
+                    activity_by_day[date] = {"face_swap": 0, "ar_photo": 0}
+                activity_by_day[date][photo['type']] += 1
+            
+            return {
+                "success": True,
+                "user": {
+                    "id": user_data[0],
+                    "username": user_data[1],
+                    "role": user_data[2],
+                    "credit_balance": user_data[3],
+                    "created_at": user_data[4],
+                    "last_login": user_data[5],
+                    "is_active": bool(user_data[6])
+                },
+                "statistics": {
+                    "total_photos": total_photos,
+                    "face_swap_count": face_swap_count,
+                    "ar_photos_count": ar_photos_count,
+                    "estimated_revenue": estimated_revenue,
+                    "avg_photos_per_session": round(total_photos / max(1, total_photos // 3), 1) if total_photos > 1 else 0,
+                    "photos_this_month": len([p for p in all_photos if p['created_at'][:7] == datetime.now().strftime('%Y-%m')])
+                },
+                "recent_photos": all_photos[:20],  # 20 foto terbaru
+                "activity_by_day": activity_by_day
+            }
+    except Exception as e:
+        logger.error(f"Error getting user details: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/api/admin/dashboard/revenue-per-site")
+async def get_revenue_per_site(period: str = "all_time", admin_user = Depends(admin_required)):
+    """Get revenue per site/user - UPDATED for Day 2"""
+    try:
+        with auth_service.db_manager.get_connection() as conn:
+            # Build query based on period
+            date_filter = ""
+            if period == "today":
+                date_filter = "AND DATE(t.settled_at) = DATE('now')"
+            elif period == "this_week":
+                date_filter = "AND DATE(t.settled_at) >= DATE('now', '-7 days')"
+            elif period == "this_month":
+                date_filter = "AND DATE(t.settled_at) >= DATE('now', '-30 days')"
+            
+            cursor = conn.execute(f"""
+                SELECT 
+                    u.username,
+                    COALESCE(SUM(t.amount), 0) as total_revenue,
+                    COUNT(t.id) as transaction_count,
+                    COUNT(fsh.id) as photo_count
+                FROM users u
+                LEFT JOIN transactions t ON u.id = t.user_id 
+                    AND t.status = 'settlement' {date_filter}
+                LEFT JOIN face_swap_history fsh ON u.id = fsh.user_id
+                WHERE u.role = 'user'
+                GROUP BY u.id, u.username
+                ORDER BY total_revenue DESC
+            """)
+            
+            revenue_data = []
+            labels = []
+            revenues = []
+            colors = []
+            
+            # Color palette for different sites
+            color_palette = [
+                '#667eea', '#764ba2', '#f093fb', '#f5576c',
+                '#4facfe', '#00f2fe', '#43e97b', '#38f9d7',
+                '#fa709a', '#fee140', '#a8edea', '#fed6e3',
+                '#ff9a9e', '#fecfef', '#ffecd2', '#fcb69f',
+                '#84fab0', '#8fd3f4'
+            ]
+            
+            for i, row in cursor.fetchall():
+                username = row[0]
+                revenue = row[1]
+                tx_count = row[2]
+                photo_count = row[3]
+                
+                site_name = username.upper()  # Convert to uppercase for display
+                labels.append(site_name)
+                revenues.append(revenue)
+                colors.append(color_palette[i % len(color_palette)])
+                
+                revenue_data.append({
+                    "site": site_name,
+                    "revenue": revenue,
+                    "transactions": tx_count,
+                    "photos": photo_count,
+                    "revenue_formatted": f"Rp {revenue:,}" if revenue > 0 else "Rp 0",
+                    "color": colors[-1]
+                })
+            
+            # Calculate totals
+            total_revenue = sum(revenues)
+            total_transactions = sum(item["transactions"] for item in revenue_data)
+            active_sites = len([item for item in revenue_data if item["revenue"] > 0])
+            
+            return {
+                "success": True,
+                "labels": labels,
+                "revenues": revenues,
+                "colors": colors,
+                "data": revenue_data,
+                "period": period,
+                "summary": {
+                    "total_sites": len(revenue_data),
+                    "active_sites": active_sites,
+                    "total_revenue": total_revenue,
+                    "total_transactions": total_transactions,
+                    "average_revenue_per_site": total_revenue // len(revenue_data) if revenue_data else 0
+                },
+                "chart_config": {
+                    "type": "bar",
+                    "responsive": True,
+                    "title": f"Pendapatan Per Site ({period.replace('_', ' ').title()})"
+                }
+            }
+    
+    except Exception as e:
+        logger.error(f"Error getting revenue per site: {e}")
+        return {
+            "success": False,
+            "error": str(e),
+            "labels": [],
+            "revenues": [],
+            "data": []
+        }
+
+@app.get("/api/admin/transactions")
+async def get_transactions(admin_user = Depends(admin_required)):
+    """Get all transactions for admin transaction history page"""
+    try:
+        with auth_service.db_manager.get_connection() as conn:
+            cursor = conn.execute("""
+                SELECT t.id, t.order_id, t.amount, t.credits_added, t.status, t.created_at, t.settled_at, u.username
+                FROM transactions t
+                LEFT JOIN users u ON t.user_id = u.id
+                ORDER BY t.created_at DESC
+                LIMIT 500
+            """)
+            transactions = []
+            for row in cursor.fetchall():
+                transactions.append({
+                    "id": row[0],
+                    "order_id": row[1],
+                    "amount": row[2],
+                    "credits_added": row[3],
+                    "status": row[4],
+                    "created_at": row[5],
+                    "settled_at": row[6],
+                    "username": row[7] or "Unknown"
+                })
+            return {"success": True, "transactions": transactions, "count": len(transactions)}
+    except Exception as e:
+        return {"success": False, "error": str(e), "transactions": []}
+
+@app.get("/api/admin/user_management_stats")
+async def get_user_management_stats(admin_user = Depends(admin_required)):
+    """
+    Ambil statistik untuk halaman user management:
+    - jumlah foto faceswap
+    - jumlah foto ar photo
+    - estimasi real (total pendapatan dari transaksi settlement)
+    """
+    try:
+        with auth_service.db_manager.get_connection() as conn:
+            faceswap_count = conn.execute(
+                "SELECT COUNT(*) FROM faceswap_photos"
+            ).fetchone()[0]
+
+            arphoto_count = conn.execute(
+                "SELECT COUNT(*) FROM ar_photos"
+            ).fetchone()[0]
+
+            total_revenue = conn.execute(
+                "SELECT SUM(amount) FROM transactions WHERE status = 'settlement'"
+            ).fetchone()[0] or 0
+
+        return {
+            "success": True,
+            "faceswap_count": faceswap_count,
+            "arphoto_count": arphoto_count,
+            "total_revenue": total_revenue
+        }
+    except Exception as e:
+        return {
+            "success": False,
+            "error": str(e)
         }
 
 # Placeholder routes for admin navigation
@@ -1660,93 +2182,28 @@ async def debug_users():
         return {"success": False, "error": str(e)}
 
 @app.get("/api/admin/users")
-async def list_users_with_stats(admin_user = Depends(admin_required)):
-    """Get all users with detailed statistics"""
+async def get_admin_users(admin_user = Depends(admin_required)):
+            
     try:
         with auth_service.db_manager.get_connection() as conn:
-            cursor = conn.execute("""
-                SELECT 
-                    u.id, u.username, u.role, u.credit_balance, 
-                    u.created_at, u.last_login, u.is_active,
-                    COUNT(DISTINCT h.id) as total_face_swap_photos
-                FROM users u
-                LEFT JOIN face_swap_history h ON u.id = h.user_id
-                WHERE u.role = 'user'
-                GROUP BY u.id, u.username, u.role, u.credit_balance, u.created_at, u.last_login, u.is_active
-                ORDER BY total_face_swap_photos DESC, u.username
-            """)
-            
-            users = []
-            for row in cursor.fetchall():
-                user_id = row[0]
-                username = row[1]
-                
-                # Hitung AR photos dari folder user
-                ar_photos_count = 0
-                user_ar_folder = f"static/ar_results"
-                if os.path.exists(user_ar_folder):
-                    # Hitung file yang mengandung username
-                    ar_files = [f for f in os.listdir(user_ar_folder) 
-                               if f.startswith(username) and f.lower().endswith(('.png', '.jpg', '.jpeg'))]
-                    ar_photos_count = len(ar_files)
-                
-                # Estimasi revenue (berdasarkan jumlah foto / 3 * 5000)
-                total_photos = row[7] + ar_photos_count  # face_swap + ar_photos
-                estimated_revenue = (total_photos // 3) * 5000
-                if total_photos % 3 > 0:
-                    estimated_revenue += 5000  # Partial payment
-                
-                users.append({
-                    "id": user_id,
-                    "username": username,
-                    "role": row[2],
-                    "credit_balance": row[3],
-                    "created_at": row[4],
-                    "last_login": row[5],
-                    "is_active": bool(row[6]),
-                    "total_face_swap": row[7],
-                    "total_ar_photos": ar_photos_count,
-                    "total_photos": total_photos,
-                    "estimated_revenue": estimated_revenue,
-                    "avg_photos_per_session": round(total_photos / max(1, total_photos // 3), 1)
-                })
-            
-            return {
-                "success": True,
-                "users": users,
-                "count": len(users)
-            }
-    
-    except Exception as e:
-        logger.error(f"Error getting users list: {e}")
-        return {
-            "success": False,
-            "error": str(e),
-            "users": [],
-            "count": 0
-        }
-    
-@app.get("/api/admin/users/{user_id}/details")
-async def get_user_details(user_id: int, admin_user = Depends(admin_required)):
-    """Get detailed statistics for specific user"""
-    try:
-        with auth_service.db_manager.get_connection() as conn:
-            # Get basic user info
+            # Get user data
             cursor = conn.execute("""
                 SELECT id, username, role, credit_balance, created_at, last_login, is_active
-                FROM users WHERE id = ?
-            """, (user_id,))
+                FROM users WHERE username = ?
+            """, (admin_user.get('username'),))
             
             user_data = cursor.fetchone()
+            
             if not user_data:
                 raise HTTPException(status_code=404, detail="User not found")
             
+            user_id = user_data[0]
             username = user_data[1]
             
             # Get face swap history
             cursor = conn.execute("""
                 SELECT template_name, result_filename, created_at
-                FROM face_swap_history 
+                FROM face_swap_history
                 WHERE user_id = ?
                 ORDER BY created_at DESC
                 LIMIT 50
@@ -1766,7 +2223,7 @@ async def get_user_details(user_id: int, admin_user = Depends(admin_required)):
             user_ar_folder = "static/ar_results"
             if os.path.exists(user_ar_folder):
                 import time
-                ar_files = [f for f in os.listdir(user_ar_folder) 
+                ar_files = [f for f in os.listdir(user_ar_folder)
                            if f.startswith(username) and f.lower().endswith(('.png', '.jpg', '.jpeg'))]
                 
                 for filename in ar_files:
@@ -1825,7 +2282,6 @@ async def get_user_details(user_id: int, admin_user = Depends(admin_required)):
                 "recent_photos": all_photos[:20],  # 20 foto terbaru
                 "activity_by_day": activity_by_day
             }
-    
     except Exception as e:
         logger.error(f"Error getting user details: {e}")
         raise HTTPException(status_code=500, detail=str(e))

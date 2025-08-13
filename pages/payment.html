@@ -610,39 +610,26 @@
         if (this.currentUser) {
           this.currentUser.credit_balance += 3;
           document.getElementById('currentCredits').textContent = this.currentUser.credit_balance;
-          
-          // Update localStorage
           localStorage.setItem('user', JSON.stringify(this.currentUser));
         }
 
-        // Show success and continue button
-        this.showSuccess('Payment successful! Credits added. Redirecting to character selection...');
+        // Show success message
+        this.showSuccess('Pembayaran berhasil! Kredit telah ditambahkan. Anda akan diarahkan ke halaman pilih karakter.');
+
+        // Show continue button
         document.getElementById('continueBtn').style.display = 'inline-flex';
         document.getElementById('cancelBtn').style.display = 'none';
         document.getElementById('refreshBtn').style.display = 'none';
 
-        // Auto redirect to character selection after 2 seconds
+        // Redirect to character selection after 2 seconds
         setTimeout(() => {
           this.proceedAfterPayment();
         }, 2000);
       }
 
       proceedAfterPayment() {
-        // Clear any remaining intervals
         this.clearAllIntervals();
-
-        // Determine redirect URL based on referrer or context
-        const referrer = document.referrer;
-        let redirectUrl = '/character'; // Default for face swap
-
-        if (referrer.includes('/ar_manipulasi') || referrer.includes('/ar-character') || referrer.includes('/ar_payment')) {
-          redirectUrl = '/ar-character';
-        } else if (referrer.includes('/manipulasi') || referrer.includes('/character') || referrer.includes('/payment')) {
-          redirectUrl = '/character';
-        }
-
-        console.log('Redirecting to:', redirectUrl);
-        window.location.replace(redirectUrl);
+        window.location.replace('/character');
       }
 
       async refreshPayment() {

@@ -797,7 +797,7 @@ async def generate_qris_token(current_user = Depends(get_current_user_optional))
             "payment_type": "qris",
             "transaction_details": {
                 "order_id": order_id,
-                "gross_amount": 8,
+                "gross_amount": 1,
             },
             "qris": {
                 "acquirer": "gopay"
@@ -1209,13 +1209,68 @@ async def ar_upload(
 
 @app.get("/api/user/credits")
 async def get_user_credits(current_user = Depends(get_current_user)):
-    """Get current user credit balance"""
-    return {
-        "success": True,
-        "credits": current_user.get("credit_balance", 0),
-        "username": current_user["username"],
-        "role": current_user.get("role", "user")
-    }
+    """Get current user's credit balance"""
+    try:
+        with auth_service.db_manager.get_connection() as conn:
+            cursor = conn.execute("""
+                SELECT credit_balance FROM users WHERE id = ?
+            """, (current_user["id"],))
+            
+            result = cursor.fetchone()
+            credits = result[0] if result else 0
+            
+            return {
+                "success": True,
+                "credits": credits,
+                "username": current_user["username"],
+                "user_id": current_user["id"]
+            }
+    
+    except Exception as e:
+        logger.error(f"Error getting user credits: {e}")
+        # Return default when credit system not fully implemented
+        return {
+            "success": True,
+            "credits": 0,
+            "username": current_user["username"],
+            "user_id": current_user["id"],
+            "note": "Credit system in development"
+        }
+
+@app.get("/api/user/photo-stats")
+async def get_user_photo_stats(current_user = Depends(get_current_user)):
+    """Get user's personal photo statistics"""
+    try:
+        with auth_service.db_manager.get_connection() as conn:
+            # Count face swap photos
+            face_swap_count = conn.execute("""
+                SELECT COUNT(*) FROM face_swap_history WHERE user_id = ?
+            """, (current_user["id"],)).fetchone()[0]
+            
+            # Try to count AR photos if table exists
+            try:
+                ar_photo_count = conn.execute("""
+                    SELECT COUNT(*) FROM photos 
+                    WHERE user_id = ? AND photo_type = 'ar_photo'
+                """, (current_user["id"],)).fetchone()[0]
+            except:
+                ar_photo_count = 0
+            
+            return {
+                "success": True,
+                "face_swap_count": face_swap_count,
+                "ar_photo_count": ar_photo_count,
+                "total_photos": face_swap_count + ar_photo_count
+            }
+    
+    except Exception as e:
+        logger.error(f"Error getting user photo stats: {e}")
+        return {
+            "success": True,
+            "face_swap_count": 0,
+            "ar_photo_count": 0,
+            "total_photos": 0
+        }
 
 @app.get("/api/history")
 async def get_user_history(current_user = Depends(get_current_user)):

@@ -20,59 +20,23 @@
       justify-content: center;
       align-items: center;
       height: 100vh;
-      padding: 20px;
     }
 
     .payment-box {
       border-radius: 15px;
       padding: 30px 40px;
       text-align: center;
-      width: 350px;
-      max-width: 90%;
+      width: 320px;
       box-shadow: 0 12px 30px rgba(0,0,0,0.2);
       color: #ffff;
-      background: rgba(255,255,255,0.1);
-      backdrop-filter: blur(10px);
-      border: 1px solid rgba(255,255,255,0.2);
     }
 
     .logo-text {
       font-size: 22px;
       font-weight: bold;
       color: #008cff;
-      margin-bottom: 20px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 10px;
-    }
-
-    .user-info {
-      background: rgba(0, 255, 204, 0.1);
-      border: 1px solid rgba(0, 255, 204, 0.3);
-      border-radius: 10px;
-      padding: 15px;
-      margin-bottom: 20px;
-    }
-
-    .user-info h4 {
-      margin: 0 0 8px 0;
-      color: #00ffcc;
-    }
-
-    .user-info p {
-      margin: 5px 0;
-      font-size: 0.9rem;
-      opacity: 0.9;
-    }
-
-    .current-credits {
-      background: linear-gradient(45deg, #e74c3c, #c0392b);
-      padding: 8px 12px;
-      border-radius: 15px;
-      font-weight: bold;
-      display: inline-block;
-      margin-top: 5px;
+      margin-bottom: 10px;
+      cursor: pointer;
     }
 
     .qris-wrapper {
@@ -82,7 +46,7 @@
       display: flex;
       flex-direction: column;
       align-items: center;
-      margin: 20px 0;
+      margin: 15px 0;
     }
 
     .qris-img {
@@ -92,7 +56,6 @@
       background-color: white;
       border: none;
       padding: 0;
-      border-radius: 5px;
     }
 
     .logo-qris {
@@ -103,35 +66,32 @@
       display: flex;
       justify-content: space-between;
       margin-top: 20px;
-      font-size: 12px;
+      font-size: 13px;
       color: #ffff;
     }
 
     .steps div {
       flex: 1;
-      padding: 0 3px;
+      padding: 0 5px;
     }
 
     .steps div span {
       display: block;
       font-weight: bold;
       color: #ffff;
-      font-size: 14px;
-      margin-bottom: 5px;
     }
 
     .promo-text b {
-      font-size: 20px;
+      font-size: 22px;
       font-weight: bold;
       color: #d0ff00;
     }
-    
+
     .promo-text {
       margin-top: 20px;
       font-size: 14px;
       color: #ffff;
       font-weight: bold;
-      line-height: 1.4;
     }
 
     .continue-btn {
@@ -149,7 +109,6 @@
       align-items: center;
       gap: 10px;
       box-shadow: 0 8px 25px rgba(0, 255, 204, 0.3);
-      border: none;
     }
 
     .continue-btn:hover {
@@ -157,27 +116,50 @@
       box-shadow: 0 12px 30px rgba(0, 255, 204, 0.4);
     }
 
-    .continue-btn:disabled {
-      background: #ccc;
-      color: #666;
-      cursor: not-allowed;
-      transform: none;
-      box-shadow: none;
+    .back-home-btn {
+      margin-top: 15px;
+      padding: 10px 18px;
+      background: rgba(255, 255, 255, 0.1);
+      color: white;
+      border: 2px solid rgba(255, 255, 255, 0.3);
+      border-radius: 20px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      transition: all 0.3s ease;
+      backdrop-filter: blur(10px);
     }
 
-    .loading-state {
-      display: none;
-      margin: 20px 0;
+    .back-home-btn:hover {
+      background: rgba(255, 255, 255, 0.2);
+      border-color: rgba(255, 255, 255, 0.5);
+      transform: translateY(-2px);
     }
 
-    .spinner {
-      width: 30px;
-      height: 30px;
-      border: 3px solid rgba(255,255,255,0.3);
-      border-top: 3px solid #00ffcc;
+    .auto-redirect-info {
+      margin-top: 15px;
+      font-size: 12px;
+      color: rgba(255, 255, 255, 0.7);
+      font-style: italic;
+    }
+
+    .auto-redirect-info span {
+      color: #00ffcc;
+      font-weight: bold;
+    }
+
+    /* Loading and error states */
+    .loading-spinner {
+      width: 40px;
+      height: 40px;
+      border: 4px solid #f3f3f3;
+      border-top: 4px solid #008cff;
       border-radius: 50%;
       animation: spin 1s linear infinite;
-      margin: 0 auto 10px;
+      margin: 20px auto;
     }
 
     @keyframes spin {
@@ -186,216 +168,66 @@
     }
 
     .error-message {
-      background: rgba(231, 76, 60, 0.2);
-      border: 1px solid rgba(231, 76, 60, 0.5);
-      color: #e74c3c;
-      padding: 15px;
-      border-radius: 10px;
-      margin: 15px 0;
+      color: #ff6b6b;
+      font-size: 14px;
+      margin-top: 10px;
+      padding: 10px;
+      background: rgba(255, 107, 107, 0.1);
+      border-radius: 5px;
       display: none;
     }
 
     .success-message {
-      background: rgba(39, 174, 96, 0.2);
-      border: 1px solid rgba(39, 174, 96, 0.5);
-      color: #27ae60;
-      padding: 15px;
-      border-radius: 10px;
-      margin: 15px 0;
-      display: none;
-    }
-
-    .back-btn {
-      position: absolute;
-      top: 20px;
-      left: 20px;
-      background: rgba(255,255,255,0.2);
-      color: white;
-      border: none;
-      padding: 10px 15px;
-      border-radius: 10px;
-      cursor: pointer;
-      transition: all 0.3s ease;
-      display: flex;
-      align-items: center;
-      gap: 8px;
-    }
-
-    .back-btn:hover {
-      background: rgba(255,255,255,0.3);
-    }
-
-    .home-btn {
-      position: absolute;
-      top: 20px;
-      right: 20px;
-      background: linear-gradient(45deg, #ff6b6b, #ee5a52);
-      color: white;
-      border: none;
-      padding: 10px 15px;
-      border-radius: 10px;
-      cursor: pointer;
-      transition: all 0.3s ease;
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      box-shadow: 0 4px 15px rgba(255, 107, 107, 0.3);
-    }
-
-    .home-btn:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 8px 25px rgba(255, 107, 107, 0.4);
-    }
-
-    .timeout-warning {
-      background: rgba(255, 193, 7, 0.2);
-      border: 1px solid rgba(255, 193, 7, 0.5);
-      color: #ffc107;
-      padding: 15px;
-      border-radius: 10px;
-      margin: 15px 0;
-      display: none;
-      animation: pulse 1s infinite;
-    }
-
-    @keyframes pulse {
-      0% { opacity: 1; }
-      50% { opacity: 0.7; }
-      100% { opacity: 1; }
-    }
-
-    .countdown-timer {
-      font-size: 1.1rem;
-      font-weight: bold;
-      color: #ffc107;
-      margin: 10px 0;
-      display: none;
-    }
-
-    .buttons-container {
-      display: flex;
-      gap: 10px;
-      margin-top: 20px;
-      flex-wrap: wrap;
-      justify-content: center;
-    }
-
-    .btn-secondary {
-      background: rgba(255,255,255,0.2);
-      color: white;
-      border: 2px solid rgba(255,255,255,0.3);
-      padding: 10px 20px;
-      border-radius: 20px;
-      cursor: pointer;
-      transition: all 0.3s ease;
-      display: flex;
-      align-items: center;
-      gap: 8px;
+      color: #51cf66;
       font-size: 14px;
+      margin-top: 10px;
+      padding: 10px;
+      background: rgba(81, 207, 102, 0.1);
+      border-radius: 5px;
+      display: none;
     }
 
-    .btn-secondary:hover {
-      background: rgba(255,255,255,0.3);
-      transform: translateY(-1px);
+    .qris-status {
+      margin-top: 10px;
+      font-size: 12px;
+      opacity: 0.8;
     }
 
-    @media (max-width: 480px) {
-      .payment-box {
-        width: 95%;
-        padding: 25px 20px;
-      }
+    .retry-button {
+      margin-top: 15px;
+      padding: 8px 16px;
+      background: #ff6b6b;
+      color: white;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      font-size: 14px;
+      display: none;
+    }
 
-      .qris-img {
-        width: 200px;
-        height: 200px;
-      }
-
-      .steps {
-        font-size: 11px;
-      }
-
-      .steps div span {
-        font-size: 13px;
-      }
-
-      .home-btn, .back-btn {
-        position: relative;
-        top: auto;
-        right: auto;
-        left: auto;
-        margin: 10px 5px;
-      }
-
-      .buttons-container {
-        flex-direction: column;
-        align-items: center;
-      }
+    .retry-button:hover {
+      background: #ee5a52;
     }
   </style>
 </head>
 <body>
-  <button class="back-btn" onclick="goBack()">
-    <i class="fas fa-arrow-left"></i>
-    <span>Back</span>
-  </button>
-
-  <button class="home-btn" onclick="goHome()">
-    <i class="fas fa-home"></i>
-    <span>Home</span>
-  </button>
-
   <div class="center-wrapper">
     <div class="payment-box">
-      <div class="logo-text">
-        <img src="/static/images/logo.png" height="40px">
-        <span>Payment</span>
+      <div class="logo-text" onclick="logout()">
+        <img src="/static/images/logo.png" height="50px">
       </div>
-
-      <!-- User Info Section -->
-      <!-- <div class="user-info" id="userInfo" style="display: none;">
-        <h4><i class="fas fa-user"></i> User Information</h4>
-        <p><strong>Username:</strong> <span id="currentUsername">-</span></p>
-        <p><strong>Current Credits:</strong> <span class="current-credits" id="currentCredits">0</span></p>
-        <p><strong>After Payment:</strong> <span style="color: #27ae60; font-weight: bold;">+3 Credits</span></p>
-      </div> -->
-
-      <!-- Countdown Timer -->
-      <div class="countdown-timer" id="countdownTimer">
-        <i class="fas fa-clock"></i>
-        Auto redirect in: <span id="countdownSeconds">20</span>s
-      </div>
-
-      <!-- Error Message -->
-      <div class="error-message" id="errorMessage">
-        <i class="fas fa-exclamation-triangle"></i>
-        <span id="errorText">Something went wrong</span>
-      </div>
-
-      <!-- Success Message -->
-      <div class="success-message" id="successMessage">
-        <i class="fas fa-check-circle"></i>
-        <span id="successText">Payment successful!</span>
-      </div>
-
-      <!-- Timeout Warning -->
-      <div class="timeout-warning" id="timeoutWarning">
-        <i class="fas fa-hourglass-half"></i>
-        <span>Tidak ada aktivitas pembayaran. Akan redirect ke dashboard dalam 5 detik...</span>
-      </div>
-
-      <!-- Loading State -->
-      <div class="loading-state" id="loadingState">
-        <div class="spinner"></div>
-        <p>Generating payment QR code...</p>
-      </div>
-
-      <!-- QRIS Section -->
-      <div class="qris-wrapper" id="qrisWrapper" style="display: none;">
-        <img src="/static/images/Logo_QRIS.png" height="45px" class="logo-qris">
+      
+      <div class="qris-wrapper">
+        <img src="/static/images/Logo_QRIS.png" height="50px" class="logo-qris">
         <img class="qris-img" id="qris-img" src="/static/images/loading.gif" alt="QRIS">
+        <div class="qris-status" id="qris-status">Loading QR Code...</div>
       </div>
-
-      <div class="steps" id="paymentSteps" style="display: none;">
+      
+      <div class="error-message" id="error-message"></div>
+      <div class="success-message" id="success-message"></div>
+      <button class="retry-button" id="retry-button" onclick="loadQRIS()">Retry Loading QR Code</button>
+      
+      <div class="steps">
         <div><span>1</span>Open your<br>payment app</div>
         <div><span>2</span>Scan this<br>QR code</div>
         <div><span>3</span>Verify the<br>details</div>
@@ -403,396 +235,294 @@
       </div>
 
       <div class="promo-text">
-        Bayar cuma <b>Rp. 5.000</b> untuk <b>3 CREDITS</b> dan dapatkan foto kece langsung!
-        <br><br>
-        <small style="opacity: 0.8;">
-          <i class="fas fa-info-circle"></i>
-          1 Credit = 1 Foto (Face Swap atau AR Photo)
-        </small>
+        Bayar cuma <b>Rp. 5.000</b> untuk <b>3 KALI</b> foto dan dapatkan foto kece langsung!
       </div>
 
-      <!-- Buttons Container -->
-      <div class="buttons-container" id="buttonsContainer">
-        <button class="continue-btn" id="continueBtn" style="display: none;" onclick="proceedAfterPayment()">
-          <i class="fa-solid fa-camera-retro"></i> 
-          <span>Lanjut ke Photobooth</span>
-        </button>
+      <div class="continue-btn" id="continueBtn" style="display: none;">
+        <i class="fa-solid fa-camera-retro"></i> Lanjut ke Photobooth
+      </div>
 
-        <button class="btn-secondary" id="cancelBtn" onclick="cancelPayment()" style="display: none;">
-          <i class="fas fa-times"></i>
-          <span>Batal</span>
-        </button>
+      <div class="back-home-btn" onclick="backToHome()">
+        <i class="fa-solid fa-home"></i> Back to Dashboard
+      </div>
 
-        <button class="btn-secondary" id="refreshBtn" onclick="refreshPayment()" style="display: none;">
-          <i class="fas fa-refresh"></i>
-          <span>Refresh QR</span>
-        </button>
+      <div class="auto-redirect-info" id="autoRedirectInfo">
+        Auto redirect to dashboard in <span id="countdown">20</span> seconds...
       </div>
     </div>
   </div>
 
   <script>
-    class PaymentManager {
-      constructor() {
-        this.orderId = null;
-        this.pollingInterval = null;
-        this.currentUser = null;
-        this.timeoutInterval = null;
-        this.countdownInterval = null;
-        this.timeoutSeconds = 20; // 20 seconds timeout
-        this.init();
-      }
+    let orderId = null;
+    let pollingInterval = null;
+    let retryCount = 0;
+    const maxRetries = 3;
+    let autoRedirectTimer = null;
+    let countdownTimer = null;
+    let countdownSeconds = 20;
 
-      async init() {
-        try {
-          // Load current user info
-          await this.loadUserInfo();
-          
-          // Start payment process
-          await this.loadQRIS();
-        } catch (error) {
-          this.showError('Failed to initialize payment: ' + error.message);
-        }
-      }
+    // Authenticated user check
+    const token = localStorage.getItem('token');
+    if (!token) {
+      window.location.replace('/login');
+    }
 
-      async loadUserInfo() {
-        const token = localStorage.getItem('token');
-        const userInfo = document.getElementById('userInfo');
-        
-        if (token) {
-          try {
-            const response = await fetch('/api/me', {
-              headers: {'Authorization': `Bearer ${token}`}
-            });
-            
-            if (response.ok) {
-              const data = await response.json();
-              this.currentUser = data.user;
-              
-              // Show user info
-              document.getElementById('currentUsername').textContent = this.currentUser.username;
-              document.getElementById('currentCredits').textContent = this.currentUser.credit_balance;
-              userInfo.style.display = 'block';
-            }
-          } catch (error) {
-            console.log('User not authenticated, proceeding without user info');
-          }
-        }
-      }
+    // Auto-redirect untuk idle timeout
+    let idleTimeout;
+    const idleLimit = 60000; // 60 detik
 
-      async loadQRIS() {
-        try {
-          this.showLoading();
-          
-          const response = await fetch('/api/qris/token', {
-            method: 'GET',
-            headers: this.currentUser ? {'Authorization': `Bearer ${localStorage.getItem('token')}`} : {}
-          });
-
-          if (!response.ok) {
-            const errorText = await response.text();
-            throw new Error("QRIS Error: " + errorText);
-          }
-
-          const data = await response.json();
-
-          if (data.success && data.qris_url && data.order_id) {
-            this.orderId = data.order_id;
-            
-            // Show QRIS
-            document.getElementById('qris-img').src = data.qris_url;
-            document.getElementById('qrisWrapper').style.display = 'block';
-            document.getElementById('paymentSteps').style.display = 'flex';
-            document.getElementById('cancelBtn').style.display = 'inline-flex';
-            document.getElementById('refreshBtn').style.display = 'inline-flex';
-            
-            this.hideLoading();
-
-            // Start countdown timer
-            this.startTimeoutCountdown();
-
-            // Start polling payment status
-            this.pollingInterval = setInterval(() => {
-              this.checkPaymentStatus();
-            }, 2000); // Check every 2 seconds
-
-            this.showSuccess('QR Code ready! Scan to pay within 20 seconds.');
-          } else {
-            throw new Error(data.error || "Failed to generate QR code");
-          }
-
-        } catch (error) {
-          this.hideLoading();
-          this.showError(error.message || "QRIS Error");
-          console.error("QRIS load error:", error);
-          
-          // Show retry options
-          document.getElementById('refreshBtn').style.display = 'inline-flex';
-          document.getElementById('cancelBtn').style.display = 'inline-flex';
-        }
-      }
-
-      startTimeoutCountdown() {
-        let seconds = this.timeoutSeconds;
-        const countdownTimer = document.getElementById('countdownTimer');
-        const countdownSeconds = document.getElementById('countdownSeconds');
-        
-        countdownTimer.style.display = 'block';
-        countdownSeconds.textContent = seconds;
-
-        this.countdownInterval = setInterval(() => {
-          seconds--;
-          countdownSeconds.textContent = seconds;
-
-          if (seconds <= 5) {
-            countdownTimer.style.color = '#e74c3c';
-            countdownTimer.style.animation = 'pulse 0.5s infinite';
-          }
-
-          if (seconds <= 0) {
-            this.handleTimeout();
-          }
-        }, 1000);
-      }
-
-      handleTimeout() {
-        // Clear intervals
-        if (this.countdownInterval) {
-          clearInterval(this.countdownInterval);
-          this.countdownInterval = null;
-        }
-        if (this.pollingInterval) {
-          clearInterval(this.pollingInterval);
-          this.pollingInterval = null;
-        }
-
-        // Show timeout warning
-        document.getElementById('timeoutWarning').style.display = 'block';
-        document.getElementById('countdownTimer').style.display = 'none';
-
-        // Auto redirect to dashboard after 5 seconds
-        setTimeout(() => {
-          this.goToDashboard();
-        }, 5000);
-      }
-
-      async checkPaymentStatus() {
-        try {
-          const response = await fetch(`/api/qris/status?order_id=${this.orderId}`);
-          const data = await response.json();
-
-          console.log('Payment status:', data.transaction_status);
-
-          if (data.transaction_status === "settlement") {
-            this.handlePaymentSuccess();
-          }
-        } catch (error) {
-          console.error("Status check error:", error);
-        }
-      }
-
-      handlePaymentSuccess() {
-        // Clear all intervals
-        if (this.pollingInterval) {
-          clearInterval(this.pollingInterval);
-          this.pollingInterval = null;
-        }
-        if (this.countdownInterval) {
-          clearInterval(this.countdownInterval);
-          this.countdownInterval = null;
-        }
-
-        // Hide countdown and timeout warnings
-        document.getElementById('countdownTimer').style.display = 'none';
-        document.getElementById('timeoutWarning').style.display = 'none';
-
-        // Update user info if available
-        if (this.currentUser) {
-          this.currentUser.credit_balance += 3;
-          document.getElementById('currentCredits').textContent = this.currentUser.credit_balance;
-          localStorage.setItem('user', JSON.stringify(this.currentUser));
-        }
-
-        // Show success message
-        this.showSuccess('Pembayaran berhasil! Kredit telah ditambahkan. Anda akan diarahkan ke halaman pilih karakter.');
-
-        // Show continue button
-        document.getElementById('continueBtn').style.display = 'inline-flex';
-        document.getElementById('cancelBtn').style.display = 'none';
-        document.getElementById('refreshBtn').style.display = 'none';
-
-        // Redirect to character selection after 2 seconds
-        setTimeout(() => {
-          this.proceedAfterPayment();
-        }, 2000);
-      }
-
-      proceedAfterPayment() {
-        this.clearAllIntervals();
-        window.location.replace('/character');
-      }
-
-      async refreshPayment() {
-        // Clear current intervals
-        this.clearAllIntervals();
-        
-        // Hide messages
-        document.getElementById('errorMessage').style.display = 'none';
-        document.getElementById('successMessage').style.display = 'none';
-        document.getElementById('timeoutWarning').style.display = 'none';
-        
-        // Reload QRIS
-        await this.loadQRIS();
-      }
-
-      cancelPayment() {
-        this.clearAllIntervals();
-        this.goToDashboard();
-      }
-
-      goToDashboard() {
-        this.clearAllIntervals();
+    function resetIdleTimer() {
+      clearTimeout(idleTimeout);
+      idleTimeout = setTimeout(() => {
         window.location.replace('/dashboard');
-      }
-
-      clearAllIntervals() {
-        if (this.pollingInterval) {
-          clearInterval(this.pollingInterval);
-          this.pollingInterval = null;
-        }
-        if (this.countdownInterval) {
-          clearInterval(this.countdownInterval);
-          this.countdownInterval = null;
-        }
-      }
-
-      showLoading() {
-        document.getElementById('loadingState').style.display = 'block';
-        document.getElementById('qrisWrapper').style.display = 'none';
-        document.getElementById('paymentSteps').style.display = 'none';
-        document.getElementById('countdownTimer').style.display = 'none';
-      }
-
-      hideLoading() {
-        document.getElementById('loadingState').style.display = 'none';
-      }
-
-      showError(message) {
-        const errorDiv = document.getElementById('errorMessage');
-        document.getElementById('errorText').textContent = message;
-        errorDiv.style.display = 'block';
-        
-        // Hide after 8 seconds
-        setTimeout(() => {
-          errorDiv.style.display = 'none';
-        }, 8000);
-      }
-
-      showSuccess(message) {
-        const successDiv = document.getElementById('successMessage');
-        document.getElementById('successText').textContent = message;
-        successDiv.style.display = 'block';
-        
-        // Hide after 5 seconds
-        setTimeout(() => {
-          successDiv.style.display = 'none';
-        }, 5000);
-      }
+      }, idleLimit);
     }
 
-    // Global functions
-    function goBack() {
-      // Clear any running intervals
-      if (window.paymentManager) {
-        window.paymentManager.clearAllIntervals();
+    // Start auto-redirect countdown (20 seconds)
+    function startAutoRedirect() {
+      console.log('[REDIRECT] Starting 20-second countdown to dashboard');
+      
+      const countdownElement = document.getElementById('countdown');
+      const redirectInfo = document.getElementById('autoRedirectInfo');
+      
+      countdownSeconds = 20;
+      countdownElement.textContent = countdownSeconds;
+      
+      countdownTimer = setInterval(() => {
+        countdownSeconds--;
+        countdownElement.textContent = countdownSeconds;
+        
+        if (countdownSeconds <= 0) {
+          clearInterval(countdownTimer);
+          console.log('[REDIRECT] Auto-redirecting to dashboard');
+          window.location.replace('/dashboard');
+        }
+      }, 1000);
+      
+      // Also set main redirect timer
+      autoRedirectTimer = setTimeout(() => {
+        window.location.replace('/dashboard');
+      }, 20000);
+    }
+
+    // Stop auto-redirect countdown
+    function stopAutoRedirect() {
+      if (autoRedirectTimer) {
+        clearTimeout(autoRedirectTimer);
+        autoRedirectTimer = null;
+      }
+      if (countdownTimer) {
+        clearInterval(countdownTimer);
+        countdownTimer = null;
       }
       
-      // Go back to previous page or dashboard
-      if (document.referrer && !document.referrer.includes('/login')) {
-        window.history.back();
-      } else {
-        window.location.href = '/dashboard';
-      }
-    }
-
-    function goHome() {
-      // Clear any running intervals
-      if (window.paymentManager) {
-        window.paymentManager.clearAllIntervals();
-      }
+      const redirectInfo = document.getElementById('autoRedirectInfo');
+      redirectInfo.style.display = 'none';
       
-      window.location.replace('/dashboard');
+      console.log('[REDIRECT] Auto-redirect cancelled');
     }
 
-    function proceedAfterPayment() {
-      if (window.paymentManager) {
-        window.paymentManager.proceedAfterPayment();
+    // Manual back to home function
+    function backToHome() {
+      console.log('[REDIRECT] Manual redirect to dashboard');
+      
+      // Stop all timers
+      stopAutoRedirect();
+      
+      if (pollingInterval) {
+        clearInterval(pollingInterval);
       }
+      clearTimeout(idleTimeout);
+      
+      window.location.href = '/dashboard';
     }
 
-    function cancelPayment() {
-      if (window.paymentManager) {
-        window.paymentManager.cancelPayment();
-      }
-    }
+    // Event listeners untuk deteksi aktivitas
+    ['mousemove', 'mousedown', 'keypress', 'touchstart'].forEach(evt => {
+      document.addEventListener(evt, resetIdleTimer);
+    });
 
-    function refreshPayment() {
-      if (window.paymentManager) {
-        window.paymentManager.refreshPayment();
-      }
-    }
+    // Mulai timer
+    resetIdleTimer();
 
-    async function logout() {
+    // Enhanced QRIS loading dengan error handling
+    async function loadQRIS() {
+      const qrisImg = document.getElementById('qris-img');
+      const qrisStatus = document.getElementById('qris-status');
+      const errorMessage = document.getElementById('error-message');
+      const retryButton = document.getElementById('retry-button');
+
       try {
-        const token = localStorage.getItem('token');
+        // Reset UI state
+        errorMessage.style.display = 'none';
+        retryButton.style.display = 'none';
+        qrisImg.src = '/static/images/loading.gif';
+        qrisStatus.textContent = 'Loading QR Code...';
 
-        if (token) {
-          try {
-            await fetch('/api/logout', {
-              method: 'POST',
-              headers: {'Authorization': `Bearer ${token}`}
-            });
-          } catch (error) {
-            console.log('Logout API not available, proceeding with local logout');
+        console.log('[QRIS] Attempting to load QR code, attempt:', retryCount + 1);
+
+        // Get current user info untuk user_id
+        const userResponse = await fetch('/api/me', {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
           }
+        });
+
+        if (!userResponse.ok) {
+          throw new Error(`Failed to get user info: ${userResponse.status}`);
         }
 
-        localStorage.removeItem('token');
-        localStorage.removeItem('user');
+        const userData = await userResponse.json();
+        const userId = userData.user.id;
 
-        alert('Logout berhasil!');
-        window.location.href = '/login';
+        console.log('[QRIS] User ID obtained:', userId);
+
+        // Request QRIS token dengan user_id
+        const qrisResponse = await fetch('/api/qris/token', {
+          method: 'GET',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          }
+        });
+
+        console.log('[QRIS] API Response status:', qrisResponse.status);
+
+        if (!qrisResponse.ok) {
+          const errorText = await qrisResponse.text();
+          console.error('[QRIS] API Error response:', errorText);
+          throw new Error(`QRIS API Error (${qrisResponse.status}): ${errorText}`);
+        }
+
+        const qrisData = await qrisResponse.json();
+        console.log('[QRIS] API Response data:', qrisData);
+
+        if (qrisData.success && qrisData.qris_url && qrisData.order_id) {
+          orderId = qrisData.order_id;
+          qrisImg.src = qrisData.qris_url;
+          qrisStatus.textContent = 'QR Code Ready - Scan to Pay';
+          
+          console.log('[QRIS] QR Code loaded successfully, Order ID:', orderId);
+
+          // Mulai polling status pembayaran
+          if (pollingInterval) {
+            clearInterval(pollingInterval);
+          }
+          pollingInterval = setInterval(checkPaymentStatus, 3000);
+
+          // Start auto-redirect countdown after QR code loads
+          startAutoRedirect();
+
+          // Reset retry count on success
+          retryCount = 0;
+
+        } else {
+          throw new Error(qrisData.error || 'Invalid QRIS response format');
+        }
+
       } catch (error) {
-        console.error('Logout error:', error);
-        localStorage.clear();
-        window.location.href = '/login';
+        console.error('[QRIS] Error loading QR code:', error);
+        
+        retryCount++;
+        qrisStatus.textContent = 'Failed to load QR Code';
+        errorMessage.textContent = `Error: ${error.message}`;
+        errorMessage.style.display = 'block';
+
+        // Show fallback image
+        qrisImg.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjQwIiBoZWlnaHQ9IjI0MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjZjBmMGYwIi8+PHRleHQgeD0iNTAlIiB5PSI0NSUiIGZvbnQtZmFtaWx5PSJBcmlhbCIgZm9udC1zaXplPSIxNiIgZmlsbD0iIzk5OSIgdGV4dC1hbmNob3I9Im1pZGRsZSI+UVIgQ29kZTwvdGV4dD48dGV4dCB4PSI1MCUiIHk9IjU1JSIgZm9udC1mYW1pbHk9IkFyaWFsIiBmb250LXNpemU9IjE0IiBmaWxsPSIjOTk5IiB0ZXh0LWFuY2hvcj0ibWlkZGxlIj5Mb2FkIEZhaWxlZDwvdGV4dD48L3N2Zz4=';
+
+        // Show retry button jika belum mencapai max retries
+        if (retryCount < maxRetries) {
+          retryButton.style.display = 'inline-block';
+          qrisStatus.textContent = `Failed to load - Retry ${retryCount}/${maxRetries}`;
+        } else {
+          qrisStatus.textContent = 'QR Code unavailable - Please try again later';
+          errorMessage.textContent = 'Maximum retry attempts reached. Please refresh the page or contact support.';
+        }
       }
     }
 
-    // Initialize payment manager when page loads
-    window.addEventListener('load', () => {
-      window.paymentManager = new PaymentManager();
-    });
-
-    // Handle page unload - cleanup
-    window.addEventListener('beforeunload', () => {
-      if (window.paymentManager) {
-        window.paymentManager.clearAllIntervals();
+    // Enhanced payment status checking
+    async function checkPaymentStatus() {
+      if (!orderId) {
+        console.warn('[PAYMENT] No order ID available for status check');
+        return;
       }
-    });
 
-    // Handle page visibility change - pause/resume when tab is hidden/visible
-    document.addEventListener('visibilitychange', () => {
-      if (window.paymentManager) {
-        if (document.hidden) {
-          // Page is hidden, could pause polling
-          console.log('Page hidden, continuing payment monitoring...');
-        } else {
-          // Page is visible again
-          console.log('Page visible, payment monitoring active');
+      try {
+        const response = await fetch(`/api/qris/status?order_id=${orderId}`, {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          }
+        });
+
+        if (!response.ok) {
+          console.error('[PAYMENT] Status check failed:', response.status);
+          return;
         }
+
+        const data = await response.json();
+        console.log('[PAYMENT] Status check response:', data);
+
+        if (data.transaction_status === "settlement") {
+          console.log('[PAYMENT] Payment successful!');
+          
+          // Stop all timers
+          stopAutoRedirect();
+          
+          // Stop polling
+          if (pollingInterval) {
+            clearInterval(pollingInterval);
+            pollingInterval = null;
+          }
+
+          // Show success message
+          document.getElementById('success-message').textContent = 'Payment successful! Redirecting...';
+          document.getElementById('success-message').style.display = 'block';
+          document.getElementById('qris-status').textContent = 'Payment Confirmed';
+
+          // Redirect to AR character selection
+          setTimeout(() => {
+            window.location.href = "/character";
+          }, 2000);
+
+        } else if (data.transaction_status === "pending") {
+          // Payment still pending, continue polling
+          document.getElementById('qris-status').textContent = 'Waiting for payment...';
+        } else if (data.transaction_status === "expire" || data.transaction_status === "cancel") {
+          // Payment expired or cancelled
+          console.log('[PAYMENT] Payment expired/cancelled');
+          
+          // Stop auto-redirect and polling
+          stopAutoRedirect();
+          
+          if (pollingInterval) {
+            clearInterval(pollingInterval);
+          }
+
+          // Show error and retry button
+          document.getElementById('error-message').textContent = 'Payment session has expired or was cancelled. Please try again.';
+          document.getElementById('error-message').style.display = 'block';
+          document.getElementById('retry-button').style.display = 'inline-block';
+          document.getElementById('qris-status').textContent = 'Payment Expired/Cancelled';
+        }
+      } catch (error) {
+        console.error('[PAYMENT] Error checking payment status:', error);
       }
+    }
+
+    // Panggil loadQRIS() saat halaman dimuat
+    document.addEventListener('DOMContentLoaded', (event) => {
+      loadQRIS();
     });
+
+    // Simple logout function
+    function logout() {
+      localStorage.removeItem('token');
+      window.location.replace('/login');
+    }
   </script>
 </body>
 </html>

@@ -882,14 +882,14 @@ async def generate_qris_token(current_user = Depends(get_current_user_optional))
             conn.execute("""
                 INSERT INTO transactions (user_id, order_id, amount, credits_added, status)
                 VALUES (?, ?, ?, ?, ?)
-            """, (user_id, order_id, 1, 3, "pending"))
+            """, (user_id, order_id, 5000, 3, "pending"))
             conn.commit()
         
         payload = {
             "payment_type": "qris",
             "transaction_details": {
                 "order_id": order_id,
-                "gross_amount": 1,
+                "gross_amount": 5000,
             },
             "qris": {
                 "acquirer": "gopay"
@@ -1971,15 +1971,13 @@ async def get_revenue_per_site(period: str = "all_time", admin_user = Depends(ad
                 date_filter = "AND DATE(t.settled_at) >= DATE('now', '-30 days')"
             
             cursor = conn.execute(f"""
-                SELECT 
+                SELECT
                     u.username,
                     COALESCE(SUM(t.amount), 0) as total_revenue,
-                    COUNT(t.id) as transaction_count,
-                    COUNT(fsh.id) as photo_count
+                    COUNT(t.id) as transaction_count
                 FROM users u
-                LEFT JOIN transactions t ON u.id = t.user_id 
+                LEFT JOIN transactions t ON u.id = t.user_id
                     AND t.status = 'settlement' {date_filter}
-                LEFT JOIN face_swap_history fsh ON u.id = fsh.user_id
                 WHERE u.role = 'user'
                 GROUP BY u.id, u.username
                 ORDER BY total_revenue DESC
@@ -1999,29 +1997,25 @@ async def get_revenue_per_site(period: str = "all_time", admin_user = Depends(ad
                 '#84fab0', '#8fd3f4'
             ]
             
-            for i, row in cursor.fetchall():
-                username = row[0]
-                revenue = row[1]
-                tx_count = row[2]
-                photo_count = row[3]
+            for i, row in enumerate(cursor.fetchall()):
+                username, total_revenue, transaction_count = row
                 
-                site_name = username.upper()  # Convert to uppercase for display
+                site_name = username.upper()
                 labels.append(site_name)
-                revenues.append(revenue)
+                revenues.append(total_revenue)
                 colors.append(color_palette[i % len(color_palette)])
                 
                 revenue_data.append({
                     "site": site_name,
-                    "revenue": revenue,
-                    "transactions": tx_count,
-                    "photos": photo_count,
-                    "revenue_formatted": f"Rp {revenue:,}" if revenue > 0 else "Rp 0",
+                    "revenue": total_revenue,
+                    "transactions": transaction_count,
+                    "revenue_formatted": f"Rp {total_revenue:,}" if total_revenue > 0 else "Rp 0",
                     "color": colors[-1]
                 })
             
             # Calculate totals
-            total_revenue = sum(revenues)
-            total_transactions = sum(item["transactions"] for item in revenue_data)
+            total_revenue_all_sites = sum(revenues)
+            total_transactions_all_sites = sum(item["transactions"] for item in revenue_data)
             active_sites = len([item for item in revenue_data if item["revenue"] > 0])
             
             return {
@@ -2034,9 +2028,9 @@ async def get_revenue_per_site(period: str = "all_time", admin_user = Depends(ad
                 "summary": {
                     "total_sites": len(revenue_data),
                     "active_sites": active_sites,
-                    "total_revenue": total_revenue,
-                    "total_transactions": total_transactions,
-                    "average_revenue_per_site": total_revenue // len(revenue_data) if revenue_data else 0
+                    "total_revenue": total_revenue_all_sites,
+                    "total_transactions": total_transactions_all_sites,
+                    "average_revenue_per_site": total_revenue_all_sites // len(revenue_data) if revenue_data else 0
                 },
                 "chart_config": {
                     "type": "bar",

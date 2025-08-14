@@ -48,7 +48,7 @@ class ARConfig:
     ALLOWED_MIME_TYPES = {'image/jpeg', 'image/png', 'image/bmp'}
     
     # Domain for QR codes (update this for production)
-    DOMAIN_URL = "http://localhost:5000"
+    DOMAIN_URL = "https://https://faceswap.platinumphotobooth.my.id/"
 
 # Create router for AR Photo endpoints
 router = APIRouter(prefix="/api/ar", tags=["AR Photo"])

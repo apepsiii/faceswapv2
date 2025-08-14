@@ -86,25 +86,46 @@
         z-index: 10;
         display: none;
     }
-    .processing-screen {
-        position: absolute;
-        top: 100px;
-        left: 50%;
-        transform: translateX(-50%);
-        font-size: 2rem;
-        font-weight: bold;
-        color: #fff;
-        z-index: 30;
+    .loading-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.9);
         display: none;
-        white-space: nowrap;
-
-        text-align: center;
-        background: rgba(0, 0, 0, 0.8);
-
-        padding: 20px;
-        border-radius: 15px;
-        backdrop-filter: blur(10px);
+        align-items: center;
+        justify-content: center;
+        flex-direction: column;
+        z-index: 1000;
+        color: white;
     }
+
+    .spinner {
+        width: 50px;
+        height: 50px;
+        border: 4px solid rgba(255, 255, 255, 0.3);
+        border-top: 4px solid #00ffcc;
+        border-radius: 50%;
+        animation: spin 1s linear infinite;
+        margin-bottom: 20px;
+    }
+
+    @keyframes spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+    }
+
+    .loading-text {
+        font-size: 1.2rem;
+        margin-bottom: 10px;
+    }
+
+    .loading-subtext {
+        font-size: 0.9rem;
+        opacity: 0.8;
+    }
+
     .black-background {
         position: absolute;
         top: 0; left: 0; right: 0; bottom: 0;
@@ -130,11 +151,12 @@
     <div id="blackBackground" class="black-background"></div>
     <canvas id="canvas" style="display:none;"></canvas>
     <div id="overlay" class="overlay">READY</div>
-    <div id="processingScreen" class="processing-screen">
-        <div>Foto Anda sedang diproses...</div>
-
-        <div style="font-size: 1rem; margin-top: 10px; opacity: 0.8;">Mohon tunggu sebentar</div>
+    <div class="loading-overlay" id="loadingOverlay">
+        <div class="spinner"></div>
+        <div class="loading-text">Sedang memproses...</div>
+        <div class="loading-subtext">Mohon tunggu sebentar</div>
     </div>
+
 
 </div>
 
@@ -147,8 +169,8 @@ const characterVideo = document.getElementById("characterVideo");
 const canvas = document.getElementById("canvas");
 const overlay = document.getElementById("overlay");
 const cekrekSound = document.getElementById("cekrekSound");
-const processingScreen = document.getElementById("processingScreen");
 let existingTimer = null;
+
 let currentUser = null;
 
 // Check authentication
@@ -185,12 +207,7 @@ async function loadUserData() {
                 currentUser = userData.user;
                 document.getElementById('creditCount').textContent = userData.user.credit_balance || 0;
                 
-                // Double check credits
-                if (userData.user.role !== 'admin' && userData.user.credit_balance < 1) {
-                    alert('Tidak ada credit tersisa! Redirecting to payment...');
-                    window.location.replace('/ar_payment');
-                    return;
-                }
+
             }
         }
     } catch (error) {
@@ -275,9 +292,9 @@ function startCountdown() {
 
             setTimeout(() => {
                 capturePhoto();
-                showProcessingScreen();
 
                 fetch('/relay?state=off')
+
                 .then(() => console.log("Lampu MATI"))
                 .catch(() => console.log("Gagal matikan lampu"));
             }, 1000);
@@ -286,7 +303,9 @@ function startCountdown() {
 }
 
 function capturePhoto() {
+    showLoading('Sedang memproses foto Anda...', 'Mohon tunggu 10-20 detik');
     const originalWidth = video.videoWidth;
+
     const originalHeight = video.videoHeight;
 
     let cropWidth = originalWidth;
@@ -378,20 +397,30 @@ async function uploadPhoto(blob) {
 }
 
 
-function showProcessingScreen() {
-    video.style.display = "none";
-    processingScreen.style.display = "flex";
+function showLoading(text = 'Loading...', subtext = '') {
+    const overlay = document.getElementById('loadingOverlay');
+    const textElement = overlay.querySelector('.loading-text');
+    const subtextElement = overlay.querySelector('.loading-subtext');
+    
+    textElement.textContent = text;
+    subtextElement.textContent = subtext;
+    overlay.style.display = 'flex';
+}
+
+function hideLoading() {
+    document.getElementById('loadingOverlay').style.display = 'none';
 }
 
 function resetToCamera() {
     video.style.display = "block";
-    processingScreen.style.display = "none";
+    hideLoading();
     
     setTimeout(() => {
         resetAllState();
         showReadyThenCountdown();
     }, 2000);
 }
+
 
 // Cleanup on page unload
 window.addEventListener("beforeunload", () => {

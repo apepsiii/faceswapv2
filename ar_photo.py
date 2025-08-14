@@ -135,48 +135,72 @@ def generate_qr_code(data: str, size: int = ARConfig.QR_CODE_SIZE) -> str:
 def apply_ar_overlay(base_image_path: Path, overlay_path: Path, output_path: Path) -> Path:
     """Apply AR overlay to captured photo"""
     try:
+        logger.info(f"Applying AR overlay: base_image_path={base_image_path}, overlay_path={overlay_path}, output_path={output_path}")
+
         if not overlay_path.exists():
             logger.warning(f"Overlay file not found: {overlay_path}")
-            # Just copy the original if no overlay
             shutil.copy2(base_image_path, output_path)
             return output_path
-        
+
+        logger.info(f"Overlay file exists: {overlay_path}")
+
         base_img = cv2.imread(str(base_image_path), cv2.IMREAD_UNCHANGED)
-        overlay_img = cv2.imread(str(overlay_path), cv2.IMREAD_UNCHANGED)
-        
         if base_img is None:
+            logger.error(f"Cannot read base image: {base_image_path}")
             raise ARPhotoError(f"Cannot read base image: {base_image_path}")
+
+        logger.info(f"Base image loaded successfully: shape={base_img.shape}")
+
+        overlay_img = cv2.imread(str(overlay_path), cv2.IMREAD_UNCHANGED)
         if overlay_img is None:
             logger.warning(f"Cannot read overlay image: {overlay_path}")
             shutil.copy2(base_image_path, output_path)
             return output_path
-        
+
+        logger.info(f"Overlay image loaded successfully: shape={overlay_img.shape}")
+
+        # Check if base image is valid before resizing overlay
+        if base_img is None:
+            logger.error(f"Base image is invalid, cannot resize overlay.")
+            shutil.copy2(base_image_path, output_path)
+            return output_path
+
         # Resize overlay to match base image
-        overlay_img = cv2.resize(overlay_img, (base_img.shape[1], base_img.shape[0]))
-        
+        try:
+            overlay_img = cv2.resize(overlay_img, (base_img.shape[1], base_img.shape[0]))
+            logger.info(f"Overlay resized to: {overlay_img.shape}")
+        except Exception as e:
+            logger.error(f"Error resizing overlay: {e}")
+            shutil.copy2(base_image_path, output_path)
+            return output_path
+
         # Apply overlay with alpha blending if available
         if overlay_img.shape[2] == 4:  # Has alpha channel
+
+            logger.info("Applying overlay with alpha channel")
             alpha_mask = overlay_img[:, :, 3] / 255.0
             alpha_mask = np.stack([alpha_mask] * 3, axis=2)
-            
+
             base_img_rgb = base_img[:, :, :3] if base_img.shape[2] >= 3 else base_img
             overlay_img_rgb = overlay_img[:, :, :3]
-            
+
             result = (1 - alpha_mask) * base_img_rgb + alpha_mask * overlay_img_rgb
             result = result.astype(np.uint8)
         else:
+            logger.info("Applying simple overlay without alpha")
             # Simple overlay without alpha
             result = cv2.addWeighted(base_img, 0.7, overlay_img, 0.3, 0)
-        
+
         # Save result
         output_path.parent.mkdir(parents=True, exist_ok=True)
         success = cv2.imwrite(str(output_path), result)
-        
+
         if not success:
             raise ARPhotoError("Failed to save AR overlay result")
-        
+
         logger.info(f"AR overlay applied: {output_path}")
         return output_path
+
         
     except Exception as e:
         logger.error(f"AR overlay error: {e}")
@@ -379,12 +403,17 @@ async def create_ar_photo(
         result_filename = f"ar_photo_{timestamp}_{unique_id}.png"
         result_path = ARConfig.AR_RESULTS_DIR / result_filename
         
+        
         # Apply AR overlay
         logger.info(f"Applying AR overlay: {photo_path} + {overlay_path}")
+        logger.info(f"ARConfig.AR_RESULTS_DIR: {ARConfig.AR_RESULTS_DIR}")
+        logger.info(f"result_path: {result_path}")
         final_result_path = apply_ar_overlay(photo_path, overlay_path, result_path)
-        
+        logger.info(f"final_result_path: {final_result_path}")
+
         # Generate download URL and QR code
         download_url = f"/static/ar_results/{result_filename}"
+
         full_download_url = f"{ARConfig.DOMAIN_URL}{download_url}"
         qr_code_data = generate_qr_code(full_download_url)
         

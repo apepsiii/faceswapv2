@@ -361,8 +361,6 @@
                     });
                 }
 
-                let countdown = 30;
-
             // Display result image
             const resultImage = document.getElementById('resultImage');
             if (resultData.result_url) {
@@ -710,17 +708,21 @@
                 tryNextService();
             }
         }, 5000);
-        setTimeout(() => {
-    window.location.replace('/character');
-  }, 30000); // 20.000 milidetik = 20 detik
-    let countdown = 30;
+        let countdown = 20;
   const countdownEl = document.getElementById('countdown');
   const backBtn = document.getElementById('backBtn');
+  const backNxtEl = document.getElementById('backNxt');
 
-  // Update countdown setiap detik
+  if(countdownEl) {
+    countdownEl.textContent = countdown;
+  }
+
+  // Update countdown every second
   const timer = setInterval(() => {
     countdown--;
-    if (countdownEl) countdownEl.textContent = countdown;
+    if (countdownEl) {
+        countdownEl.textContent = countdown;
+    }
     
     if (countdown <= 0) {
       clearInterval(timer);
@@ -728,15 +730,21 @@
     }
   }, 1000);
 
-  // Tombol kembali langsung
-  backBtn.addEventListener('click', () => {
-    clearInterval(timer);
-    window.location.href = '/character';
-  });
-    backNxt.addEventListener('click', () => {
-    clearInterval(timer);
-    window.location.replace('/review');
-  });
+  // Button to go back immediately
+  if (backBtn) {
+      backBtn.addEventListener('click', () => {
+        clearInterval(timer);
+        window.location.href = '/character';
+      });
+  }
+
+  // Button to go to review page
+  if (backNxtEl) {
+      backNxtEl.addEventListener('click', () => {
+        clearInterval(timer);
+        window.location.replace('/review');
+      });
+  }
     </script>
 </body>
 </html>

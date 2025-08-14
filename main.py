@@ -182,7 +182,7 @@ class DatabaseManager:
             
             # Insert default settings if not exist
             default_settings = [
-                ('price_per_3_photos', '1', 'Harga untuk 3 foto'),
+                ('price_per_3_photos', '10000', 'Harga untuk 3 foto (dalam IDR)'),
                 ('credits_per_payment', '3', 'Credit per pembayaran'),
                 ('photos_per_session', '3', 'Foto per session'),
                 ('admin_username', 'admin', 'Default admin username'),
@@ -908,8 +908,14 @@ async def get_me(current_user = Depends(get_current_user)):
 @app.get("/api/qris/token")
 async def generate_qris_token(current_user = Depends(get_current_user_optional)):
     """Generate QRIS token - now works without authentication for easier testing"""
+    order_id = f"ORDER-{uuid.uuid4().hex[:12]}"
     try:
-        order_id = f"ORDER-{uuid.uuid4().hex[:12]}"
+        # Get price from settings, with a fallback
+        with auth_service.db_manager.get_connection() as conn:
+            cursor = conn.execute("SELECT value FROM settings WHERE key_name = 'price_per_3_photos'")
+            price_row = cursor.fetchone()
+            # Default to 10000 IDR if not set or invalid
+            price = int(price_row[0]) if price_row and price_row[0].isdigit() else 10000
         
         # Record transaction with user_id if authenticated
         user_id = current_user["id"] if current_user else None
@@ -918,14 +924,14 @@ async def generate_qris_token(current_user = Depends(get_current_user_optional))
             conn.execute("""
                 INSERT INTO transactions (user_id, order_id, amount, credits_added, status)
                 VALUES (?, ?, ?, ?, ?)
-            """, (user_id, order_id, 1, 3, "pending"))
+            """, (user_id, order_id, price, 3, "pending"))
             conn.commit()
         
         payload = {
             "payment_type": "qris",
             "transaction_details": {
                 "order_id": order_id,
-                "gross_amount": 1,
+                "gross_amount": price,
             },
             "qris": {
                 "acquirer": "gopay"
@@ -1282,9 +1288,27 @@ async def ar_upload(
         filename = f"{username}_{timestamp}_{unique_id}_{clean_template_name}.png"
         save_path = user_ar_dir / filename
         
-        # Save file
-        with save_path.open("wb") as buffer:
-            shutil.copyfileobj(webcam.file, buffer)
+        # Save the original webcam capture first
+        await save_uploaded_file(webcam, save_path)
+
+        # Apply AR Frame Overlay
+        # e.g., template "Jumbo" -> frame "jumbo_frame.png"
+        frame_filename = f"{template_name.lower()}_frame.png"
+        frame_path = Config.AR_ASSETS_DIR / "frame_full" / frame_filename
+        
+        if frame_path.exists():
+            logger.info(f"Applying AR frame: {frame_path}")
+            overlay_result = apply_frame_overlay(
+                image_path=save_path,
+                frame_path=frame_path,
+                output_path=save_path  # Overwrite the original file
+            )
+            if overlay_result:
+                logger.info(f"Successfully applied AR frame to {save_path}")
+            else:
+                logger.warning(f"Failed to apply AR frame, returning original photo.")
+        else:
+            logger.warning(f"AR frame not found for template '{template_name}' at path: {frame_path}")
         
         # Deduct credit and record photo (skip for admin)
         credits_used = 0

@@ -93,11 +93,25 @@ if (!imgName) {
     localStorage.setItem("refreshOnce", "true");
     window.location.replace("/ar-character");
 } else {
-    const localUrl = "/static/ar_results/" + imgName;
-    const serverUrl = "https://faceswap.platinumphotobooth.my.id/static/ar_results/" + imgName;
+    if (!imgName) {
+    alert("Foto tidak ditemukan.");
+    localStorage.setItem("refreshOnce", "true");
+    window.location.replace("/ar-character");
+} else {
+    // Ekstrak username dari nama file (e.g., "mjn001_timestamp.png" -> "mjn001")
+    const username = imgName.split('_')[0];
+
+    const localUrl = `/static/ar_results/${username}/${imgName}`;
+    const serverUrl = `https://localhost:5000/static/ar_results/${username}/${imgName}`;
 
     // Tampilkan foto dari lokal
-    document.getElementById("resultImage").src = localUrl;
+    const resultImage = document.getElementById("resultImage");
+    resultImage.src = localUrl;
+    resultImage.onerror = function() {
+        console.error(`Gagal memuat gambar di: ${localUrl}. URL salah atau file tidak ada.`);
+        // Optional: Tampilkan gambar placeholder atau pesan error
+        resultImage.alt = "Gagal memuat gambar. Periksa path dan nama file.";
+    };
 
     // Generate QR Code pakai link server
     QRCode.toCanvas(serverUrl, { width: 200, margin: 2 }, function (error, canvas) {

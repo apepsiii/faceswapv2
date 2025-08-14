@@ -25,11 +25,7 @@ import shutil
 import traceback
 
 # Import authentication modules
-import sqlite3
-import hashlib
-import secrets
-import jwt
-from pydantic import BaseModel
+from auth import auth_service, UserCreate, UserLogin
 
 # Import payment integration
 from midtrans_config import core_api
@@ -62,19 +58,6 @@ class Config:
     DET_SIZE = (640, 640)
     CTX_ID = 0
     
-    # JWT Configuration
-    JWT_SECRET_KEY = secrets.token_urlsafe(32)
-    JWT_ALGORITHM = "HS256"
-    JWT_EXPIRATION_HOURS = 24
-
-# Pydantic models
-class UserCreate(BaseModel):
-    username: str
-    password: str
-
-class UserLogin(BaseModel):
-    username: str
-    password: str
 
 # =============================================
 # LOGGING SETUP
@@ -99,128 +82,7 @@ lampu_status = "off"
 # DATABASE MANAGEMENT
 # =============================================
 
-DB_PATH = Path("face_swap.db")
-
-class DatabaseManager:
-    def __init__(self, db_path: Path = DB_PATH):
-        self.db_path = db_path
-        self.init_database()
-    
-    def init_database(self):
-        """Initialize SQLite database with all required tables"""
-        with sqlite3.connect(self.db_path) as conn:
-            # Users table with enhanced schema
-            conn.execute("""
-                CREATE TABLE IF NOT EXISTS users (
-                    id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    username TEXT UNIQUE NOT NULL,
-                    password_hash TEXT NOT NULL,
-                    salt TEXT NOT NULL,
-                    role TEXT DEFAULT 'user' CHECK(role IN ('admin', 'user')),
-                    credit_balance INTEGER DEFAULT 0,
-                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                    last_login TIMESTAMP,
-                    is_active BOOLEAN DEFAULT TRUE
-                )
-            """)
-            
-            # Transactions table for payment tracking
-            conn.execute("""
-                CREATE TABLE IF NOT EXISTS transactions (
-                    id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    user_id INTEGER,
-                    order_id TEXT UNIQUE NOT NULL,
-                    amount INTEGER NOT NULL,
-                    credits_added INTEGER DEFAULT 3,
-                    status TEXT DEFAULT 'pending',
-                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                    settled_at TIMESTAMP,
-                    FOREIGN KEY (user_id) REFERENCES users (id)
-                )
-            """)
-            
-            # Photos table (enhanced face_swap_history)
-            conn.execute("""
-                CREATE TABLE IF NOT EXISTS photos (
-                    id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    user_id INTEGER NOT NULL,
-                    filename TEXT NOT NULL,
-                    photo_type TEXT NOT NULL CHECK(photo_type IN ('face_swap', 'ar_photo')),
-                    template_name TEXT,
-                    file_path TEXT NOT NULL,
-                    credits_used INTEGER DEFAULT 1,
-                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                    FOREIGN KEY (user_id) REFERENCES users (id)
-                )
-            """)
-            
-            # Keep legacy table for backward compatibility
-            conn.execute("""
-                CREATE TABLE IF NOT EXISTS face_swap_history (
-                    id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    user_id INTEGER NOT NULL,
-                    template_name TEXT NOT NULL,
-                    result_filename TEXT NOT NULL,
-                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                    FOREIGN KEY (user_id) REFERENCES users (id)
-                )
-            """)
-            
-            # Settings table for dynamic configuration
-            conn.execute("""
-                CREATE TABLE IF NOT EXISTS settings (
-                    id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    key_name TEXT UNIQUE NOT NULL,
-                    value TEXT NOT NULL,
-                    description TEXT,
-                    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-                )
-            """)
-            
-            # Create indexes for performance
-            conn.execute("CREATE INDEX IF NOT EXISTS idx_username ON users(username)")
-            conn.execute("CREATE INDEX IF NOT EXISTS idx_user_photos ON photos(user_id)")
-            conn.execute("CREATE INDEX IF NOT EXISTS idx_order_id ON transactions(order_id)")
-            conn.execute("CREATE INDEX IF NOT EXISTS idx_photo_type ON photos(photo_type)")
-            
-            # Insert default settings if not exist
-            default_settings = [
-                ('price_per_3_photos', '10000', 'Harga untuk 3 foto (dalam IDR)'),
-                ('credits_per_payment', '3', 'Credit per pembayaran'),
-                ('photos_per_session', '3', 'Foto per session'),
-                ('admin_username', 'admin', 'Default admin username'),
-                ('admin_password', 'admin123', 'Default admin password')
-            ]
-            
-            for key, value, desc in default_settings:
-                conn.execute(
-                    "INSERT OR IGNORE INTO settings (key_name, value, description) VALUES (?, ?, ?)",
-                    (key, value, desc)
-                )
-            
-            # Create default admin user if not exists
-            cursor = conn.execute("SELECT COUNT(*) FROM users WHERE role = 'admin'")
-            if cursor.fetchone()[0] == 0:
-                # Create admin user
-                admin_password = "admin123"
-                salt = secrets.token_hex(32)
-                password_hash = hashlib.pbkdf2_hmac(
-                    'sha256',
-                    admin_password.encode('utf-8'),
-                    salt.encode('utf-8'),
-                    100000
-                ).hex()
-                
-                conn.execute("""
-                    INSERT INTO users (username, password_hash, salt, role, credit_balance)
-                    VALUES (?, ?, ?, ?, ?)
-                """, ("admin", password_hash, salt, "admin", 999999))
-            
-            conn.commit()
-            logger.info("Database initialized successfully")
-
-    def get_connection(self):
-        return sqlite3.connect(self.db_path)
+# Note: DatabaseManager is now in auth.py
     
 
 def create_site_users():
@@ -312,169 +174,7 @@ def create_site_users():
 # AUTHENTICATION SERVICE
 # =============================================
 
-class AuthService:
-    def __init__(self):
-        self.db_manager = DatabaseManager()
-    
-    def hash_password(self, password: str, salt: str = None) -> tuple[str, str]:
-        if salt is None:
-            salt = secrets.token_hex(32)
-        
-        password_hash = hashlib.pbkdf2_hmac(
-            'sha256',
-            password.encode('utf-8'),
-            salt.encode('utf-8'),
-            100000
-        )
-        
-        return password_hash.hex(), salt
-    
-    def verify_password(self, password: str, password_hash: str, salt: str) -> bool:
-        computed_hash, _ = self.hash_password(password, salt)
-        return computed_hash == password_hash
-    
-    def create_jwt_token(self, user_id: int, username: str, role: str) -> str:
-        payload = {
-            "user_id": user_id,
-            "username": username,
-            "role": role,
-            "exp": datetime.utcnow() + timedelta(hours=Config.JWT_EXPIRATION_HOURS),
-            "iat": datetime.utcnow()
-        }
-        
-        token = jwt.encode(payload, Config.JWT_SECRET_KEY, algorithm=Config.JWT_ALGORITHM)
-        return token
-    
-    def verify_jwt_token(self, token: str) -> dict:
-        try:
-            payload = jwt.decode(token, Config.JWT_SECRET_KEY, algorithms=[Config.JWT_ALGORITHM])
-            return payload
-        except jwt.ExpiredSignatureError:
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Token expired"
-            )
-        except jwt.InvalidTokenError:
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Invalid token"
-            )
-    
-    def register_user(self, user_data: UserCreate) -> dict:
-        with self.db_manager.get_connection() as conn:
-            cursor = conn.execute(
-                "SELECT id FROM users WHERE username = ?",
-                (user_data.username,)
-            )
-            
-            if cursor.fetchone():
-                raise HTTPException(
-                    status_code=status.HTTP_400_BAD_REQUEST,
-                    detail="Username sudah digunakan"
-                )
-            
-            if len(user_data.password) < 4:
-                raise HTTPException(
-                    status_code=status.HTTP_400_BAD_REQUEST,
-                    detail="Password minimal 4 karakter"
-                )
-            
-            password_hash, salt = self.hash_password(user_data.password)
-            
-            cursor = conn.execute("""
-                INSERT INTO users (username, password_hash, salt, role, credit_balance)
-                VALUES (?, ?, ?, ?, ?)
-            """, (user_data.username, password_hash, salt, "user", 0))
-            
-            user_id = cursor.lastrowid
-            conn.commit()
-            
-            return {
-                "success": True,
-                "message": "User berhasil didaftarkan",
-                "user_id": user_id
-            }
-    
-    def login_user(self, login_data: UserLogin) -> dict:
-        with self.db_manager.get_connection() as conn:
-            cursor = conn.execute("""
-                SELECT id, username, password_hash, salt, role, credit_balance, is_active
-                FROM users WHERE username = ?
-            """, (login_data.username,))
-            
-            user = cursor.fetchone()
-            
-            if not user:
-                raise HTTPException(
-                    status_code=status.HTTP_401_UNAUTHORIZED,
-                    detail="Username atau password salah"
-                )
-            
-            user_id, username, password_hash, salt, role, credit_balance, is_active = user
-            
-            if not is_active:
-                raise HTTPException(
-                    status_code=status.HTTP_401_UNAUTHORIZED,
-                    detail="Akun tidak aktif"
-                )
-            
-            if not self.verify_password(login_data.password, password_hash, salt):
-                raise HTTPException(
-                    status_code=status.HTTP_401_UNAUTHORIZED,
-                    detail="Username atau password salah"
-                )
-            
-            token = self.create_jwt_token(user_id, username, role)
-            
-            # Update last login
-            conn.execute("""
-                UPDATE users SET last_login = CURRENT_TIMESTAMP
-                WHERE id = ?
-            """, (user_id,))
-            conn.commit()
-            
-            # Return role-based redirect
-            redirect_url = "/dashboard_admin" if role == "admin" else "/dashboard"
-            
-            return {
-                "success": True,
-                "message": "Login berhasil",
-                "token": token,
-                "user": {
-                    "id": user_id,
-                    "username": username,
-                    "role": role,
-                    "credit_balance": credit_balance
-                },
-                "redirect_url": redirect_url
-            }
-    
-    def get_user_by_token(self, token: str) -> dict:
-        payload = self.verify_jwt_token(token)
-        user_id = payload.get("user_id")
-        
-        with self.db_manager.get_connection() as conn:
-            cursor = conn.execute("""
-                SELECT id, username, role, credit_balance, created_at, last_login
-                FROM users WHERE id = ? AND is_active = TRUE
-            """, (user_id,))
-            
-            user = cursor.fetchone()
-            
-            if not user:
-                raise HTTPException(
-                    status_code=status.HTTP_401_UNAUTHORIZED,
-                    detail="User tidak ditemukan"
-                )
-            
-            return {
-                "id": user[0],
-                "username": user[1],
-                "role": user[2],
-                "credit_balance": user[3],
-                "created_at": user[4],
-                "last_login": user[5]
-            }
+# Note: AuthService is now in auth.py
 
 # =============================================
 # APPLICATION LIFESPAN & INITIALIZATION
@@ -556,7 +256,7 @@ app.mount("/static", StaticFiles(directory="static"), name="static")
 app.include_router(ar_photo_router)
 
 # Initialize services
-auth_service = AuthService()
+# auth_service is now imported from auth.py
 security = HTTPBearer(auto_error=False)
 
 # =============================================

@@ -254,8 +254,9 @@ async def get_current_user_ar(credentials: Optional[HTTPAuthorizationCredentials
         )
     
     try:
-        from main import auth_service
+        from auth import auth_service
         token = credentials.credentials
+
         return auth_service.get_user_by_token(token)
     except ImportError:
         raise HTTPException(
@@ -438,8 +439,10 @@ async def create_ar_photo(
         
         # Save to database, deduct credit, and record in 'photos' table
         try:
-            from main import auth_service
+            from auth import auth_service
             with auth_service.db_manager.get_connection() as conn:
+
+
                 credits_used = 0
                 # Deduct credit (if not admin)
                 if current_user.get("role") != "admin":

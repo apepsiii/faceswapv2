@@ -199,7 +199,7 @@
             border-radius: 15px;
             box-shadow: 0 4px 15px rgba(0,0,0,0.1);
             position: relative;
-            height: 350px; /* TAMBAH: Fixed height untuk prevent expanding */
+            height: 500px; /* Adjusted from 450px to make it even taller */
             display: flex;
             flex-direction: column;
         }
@@ -755,7 +755,7 @@
                     ctx.fillText('Loading...', canvas.width / 2, canvas.height / 2);
                 }
 
-                const response = await fetch('/api/admin/dashboard/photo-activity-7days', {
+                const response = await fetch('/api/admin/dashboard/activity-chart?period=daily', {
                     headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
                 });
                 
@@ -763,10 +763,13 @@
                 
                 const data = await response.json();
                 
-                if (data.success && data.data) {
+                if (data.success && data.data) { // MODIFIED: Check for data.data instead of data.datasets
                     this.createPhotoActivityChart(data);
+                } else if (data.success === false) {
+                    throw new Error(data.error || 'API returned an error');
                 } else {
-                    throw new Error('Invalid data received');
+                    console.error("Invalid or incomplete data received from API:", data);
+                    throw new Error('Data chart tidak lengkap atau korup.');
                 }
             } catch (error) {
                 console.error('Error loading photo activity chart:', error);
@@ -788,118 +791,42 @@
             }
         }
 
-        createPhotoActivityChart(data) {
+        createPhotoActivityChart(chartData) {
             const ctx = document.getElementById('photoActivityChart');
-            if (!ctx) {
-                console.warn('Photo activity chart canvas not found');
-                return;
-            }
+            if (!ctx) return;
 
-            // Destroy existing chart properly
             if (this.charts.photoActivity) {
                 this.charts.photoActivity.destroy();
-                this.charts.photoActivity = null;
             }
-
-            // Validate data
-            if (!data || !data.data || !Array.isArray(data.data)) {
-                console.warn('Invalid photo activity data');
-                return;
-            }
-
-            const faceSwapData = data.data.map(item => item?.face_swap || 0);
-            const arPhotosData = data.data.map(item => item?.ar_photos || 0);
-            const labels = data.labels || [];
-
-            // Limit data points untuk performance (max 7 days)
-            const maxPoints = 7;
-            const limitedLabels = labels.slice(-maxPoints);
-            const limitedFaceSwap = faceSwapData.slice(-maxPoints);
-            const limitedArPhotos = arPhotosData.slice(-maxPoints);
 
             this.charts.photoActivity = new Chart(ctx, {
-                type: 'line',
+                type: 'bar', // CHANGED: To bar chart
                 data: {
-                    labels: limitedLabels,
-                    datasets: [
-                        {
-                            label: 'Face Swap',
-                            data: limitedFaceSwap,
-                            backgroundColor: 'rgba(102, 126, 234, 0.15)', // Reduced opacity
-                            borderColor: 'rgba(102, 126, 234, 1)',
-                            borderWidth: 2, // Reduced from 3
-                            fill: true,
-                            tension: 0.3, // Reduced from 0.4
-                            pointBackgroundColor: 'rgba(102, 126, 234, 1)',
-                            pointBorderColor: '#fff',
-                            pointBorderWidth: 1, // Reduced from 2
-                            pointRadius: 3, // Reduced from 5
-                            pointHoverRadius: 5
-                        },
-                        {
-                            label: 'AR Photos',
-                            data: limitedArPhotos,
-                            backgroundColor: 'rgba(240, 147, 251, 0.15)', // Reduced opacity
-                            borderColor: 'rgba(240, 147, 251, 1)',
-                            borderWidth: 2, // Reduced from 3
-                            fill: true,
-                            tension: 0.3, // Reduced from 0.4
-                            pointBackgroundColor: 'rgba(240, 147, 251, 1)',
-                            pointBorderColor: '#fff',
-                            pointBorderWidth: 1, // Reduced from 2
-                            pointRadius: 3, // Reduced from 5
-                            pointHoverRadius: 5
-                        }
-                    ]
+                    labels: chartData.labels,
+                    datasets: [{
+                        label: 'Total Foto per Hari',
+                        data: chartData.data, // MODIFIED: Use the simplified data array
+                        backgroundColor: 'rgba(102, 126, 234, 0.6)',
+                        borderColor: 'rgba(102, 126, 234, 1)',
+                        borderWidth: 2,
+                        borderRadius: 5,
+                        hoverBackgroundColor: 'rgba(102, 126, 234, 0.8)'
+                    }]
                 },
                 options: {
                     responsive: true,
-                    maintainAspectRatio: false, // CRITICAL: Allow custom sizing
-                    animation: {
-                        duration: 500 // Reduced animation time
-                    },
-                    interaction: {
-                        intersect: false,
-                        mode: 'index'
-                    },
-                    plugins: {
-                        legend: {
-                            position: 'top',
-                            labels: {
-                                usePointStyle: true,
-                                padding: 15, // Reduced from 20
-                                font: {
-                                    size: 11 // Reduced font size
-                                }
-                            }
-                        },
-                        title: {
-                            display: false // Disabled to save space
-                        },
-                        tooltip: {
-                            backgroundColor: 'rgba(0,0,0,0.8)',
-                            titleColor: 'white',
-                            bodyColor: 'white',
-                            borderColor: 'rgba(102, 126, 234, 1)',
-                            borderWidth: 1
-                        }
-                    },
+                    maintainAspectRatio: false,
                     scales: {
                         y: {
                             beginAtZero: true,
                             grid: {
-                                color: 'rgba(0,0,0,0.05)', // Lighter grid
-                                drawBorder: false
+                                color: '#e2e8f0'
                             },
                             ticks: {
-                                stepSize: 1,
-                                font: {
-                                    size: 10 // Smaller font
-                                },
-                                maxTicksLimit: 6 // Limit ticks
-                            },
-                            border: {
-                                display: false
+                                color: '#4a5568',
+                                font: { family: "'Poppins', sans-serif" },
+                                // Ensure ticks are integers
+                                precision: 0
                             }
                         },
                         x: {
@@ -907,36 +834,32 @@
                                 display: false
                             },
                             ticks: {
-                                font: {
-                                    size: 10 // Smaller font
-                                }
-                            },
-                            border: {
-                                display: false
+                                color: '#4a5568',
+                                font: { family: "'Poppins', sans-serif" }
                             }
                         }
                     },
-                    elements: {
-                        line: {
-                            tension: 0.3
+                    plugins: {
+                        legend: {
+                            display: false // A single dataset doesn't need a legend
                         },
-                        point: {
-                            hoverBorderWidth: 2
+                        tooltip: {
+                            enabled: true,
+                            backgroundColor: '#2d3748',
+                            titleFont: { size: 14, family: "'Poppins', sans-serif" },
+                            bodyFont: { size: 12, family: "'Poppins', sans-serif" },
+                            padding: 10,
+                            cornerRadius: 6,
+                            displayColors: false,
+                            callbacks: {
+                                label: function(context) {
+                                    return `Total: ${context.parsed.y} foto`;
+                                }
+                            }
                         }
-                    },
-                    // Performance optimizations
-                    parsing: false,
-                    normalized: true,
-                    spanGaps: true
+                    }
                 }
             });
-
-            // Force canvas size update
-            setTimeout(() => {
-                if (this.charts.photoActivity) {
-                    this.charts.photoActivity.resize();
-                }
-            }, 100);
         }
 
         async loadRevenuePerSiteChart(period = 'all_time') {

@@ -1664,74 +1664,45 @@ def count_ar_files_from_directory():
         return 0
     
 @app.get("/api/admin/dashboard/activity-chart")
-async def get_activity_chart(period: str = "daily", admin_user = Depends(admin_required)):
-    """Get activity chart data for photo usage - UPDATED FOR 7 DAYS"""
+async def get_activity_chart(period: str = "daily", admin_user=Depends(admin_required)):
+    """Get activity chart data for photo usage for the last 7 days (simplified)."""
     try:
         with auth_service.db_manager.get_connection() as conn:
             if period == "daily":
-                # *** PERUBAHAN: Data 7 hari terakhir (bukan 30 hari) ***
-                activity_data = []
-                labels = []
+                # Generate dates for the last 7 days
+                today = datetime.now()
+                dates = [(today - timedelta(days=i)) for i in range(6, -1, -1)]
+                date_map = {d.strftime('%Y-%m-%d'): 0 for d in dates}
+
+                # Query to get total photo counts grouped by day
+                seven_days_ago = (today - timedelta(days=6)).strftime('%Y-%m-%d 00:00:00')
+                cursor = conn.execute("""
+                    SELECT DATE(created_at), COUNT(*)
+                    FROM photos
+                    WHERE created_at >= ?
+                    GROUP BY DATE(created_at)
+                """, (seven_days_ago,))
                 
-                for i in range(7):  # Changed from previous implementation
-                    date = (datetime.now() - timedelta(days=6-i)).strftime('%Y-%m-%d')
-                    day_name = (datetime.now() - timedelta(days=6-i)).strftime('%a')
-                    
-                    # Count face swap dari history
-                    cursor = conn.execute("""
-                        SELECT COUNT(*) FROM face_swap_history 
-                        WHERE DATE(created_at) = ?
-                    """, (date,))
-                    face_swap_count = cursor.fetchone()[0]
-                    
-                    # Count AR photos (jika table photos tersedia)
-                    try:
-                        cursor = conn.execute("""
-                            SELECT COUNT(*) FROM photos 
-                            WHERE photo_type = 'ar_photo' AND DATE(created_at) = ?
-                        """, (date,))
-                        ar_count = cursor.fetchone()[0]
-                    except sqlite3.OperationalError:
-                        ar_count = 0
-                    
-                    labels.append(day_name)
-                    activity_data.append({
-                        "date": date,
-                        "face_swap": face_swap_count,
-                        "ar_photos": ar_count,
-                        "total": face_swap_count + ar_count
-                    })
+                rows = cursor.fetchall()
+                for row in rows:
+                    if row[0] in date_map:
+                        date_map[row[0]] = row[1]
                 
+                labels = [d.strftime('%a') for d in dates]
+                data = list(date_map.values())
+
                 return {
                     "success": True,
                     "period": "7_days",
                     "labels": labels,
-                    "datasets": [
-                        {
-                            "label": "Face Swap",
-                            "data": [item["face_swap"] for item in activity_data],
-                            "backgroundColor": "rgba(102, 126, 234, 0.6)",
-                            "borderColor": "rgba(102, 126, 234, 1)",
-                            "borderWidth": 2
-                        },
-                        {
-                            "label": "AR Photos", 
-                            "data": [item["ar_photos"] for item in activity_data],
-                            "backgroundColor": "rgba(240, 147, 251, 0.6)",
-                            "borderColor": "rgba(240, 147, 251, 1)", 
-                            "borderWidth": 2
-                        }
-                    ]
+                    "data": data  # Simplified: single data array for total photos
                 }
-            
+
             return {"success": False, "error": "Invalid period"}
-    
+
     except Exception as e:
         logger.error(f"Error getting activity chart: {e}")
-        return {
-            "success": False,
-            "error": str(e)
-        }
+        return {"success": False, "error": str(e)}
     
 @app.get("/api/admin/dashboard/user-status")
 async def get_user_status_chart(admin_user = Depends(admin_required)):

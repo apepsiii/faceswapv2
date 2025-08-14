@@ -23,8 +23,8 @@ def generate_sql_for_site_users():
     """Generate SQL commands dengan real password hashes"""
     
     site_codes = [
-        'SLO', 'MGL', 'SDO', 'PLP', 'BRJ', 'LHT', 
-        'KLK', 'MJN', 'KBN', 'CMG', 'PBN', 'BAT', 
+        'SLO', 'MGL', 'SDO', 'PLP', 'BRJ', 'LHT',
+        'KLK', 'MJN', 'KBN', 'CMG', 'PBN', 'BAT',
         'SRG', 'BLO', 'BRU', 'BSD', 'CBT'
     ]
     
@@ -32,24 +32,27 @@ def generate_sql_for_site_users():
     print("-- Generated using PBKDF2 with 100,000 iterations")
     print("")
     
-    for i, site_code in enumerate(site_codes, 1):
-        username = site_code.lower()
-        password = f"{username}123"  # slo123, mgl123, etc.
-        
-        # Generate real hash
-        password_hash, salt = hash_password(password)
-        
-        print(f"-- {i}. {site_code} (username: {username}, password: {password})")
-        print("INSERT INTO users (username, password_hash, salt, role, credit_balance, created_at)")
-        print("VALUES (")
-        print(f"    '{username}',")
-        print(f"    '{password_hash}',")
-        print(f"    '{salt}',")
-        print("    'user',")
-        print("    0,")
-        print("    CURRENT_TIMESTAMP")
-        print(");")
-        print("")
+    for site_code in site_codes:
+        # Common password for both users of a site
+        password = f"{site_code.lower()}123"
+
+        for i in range(1, 3):  # Create user 01 and 02
+            username = f"{site_code.lower()}{i:03d}"  # e.g., slo001, slo002
+            
+            # Generate real hash for the password
+            password_hash, salt = hash_password(password)
+            
+            print(f"-- User: {username}, Site: {site_code}, Password: {password}")
+            print("INSERT INTO users (username, password_hash, salt, role, credit_balance, created_at)")
+            print("VALUES (")
+            print(f"    '{username}',")
+            print(f"    '{password_hash}',")
+            print(f"    '{salt}',")
+            print("    'user',")
+            print("    0,")
+            print("    CURRENT_TIMESTAMP")
+            print(");")
+            print("")
     
     print("-- Verification Query")
     print("SELECT username, role, credit_balance, created_at")

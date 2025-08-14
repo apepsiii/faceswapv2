@@ -1,7 +1,6 @@
-# ar_photo.py
+# ar_photo.py - FIXED VERSION
 """
-AR Photo functionality module
-Separated from main.py for better code organization
+AR Photo functionality module with fixes for overlay and display issues
 """
 
 from fastapi import APIRouter, UploadFile, File, Form, HTTPException, status, Depends
@@ -20,6 +19,8 @@ import base64
 import mimetypes
 import aiofiles
 import shutil
+import traceback
+
 
 # Setup logging
 logger = logging.getLogger(__name__)
@@ -31,7 +32,8 @@ class ARConfig:
     THUMBNAIL_DIR = Path("static/ar_assets/thumbnail")
     AR_RESULTS_DIR = Path("static/ar_results")
     UPLOAD_DIR = Path("static/uploads")
-    FRAME_DIR = Path("static/images")
+    FRAME_DIR = Path("static/ar_assets/frame_full")  # Corrected path for character frames
+
     
     # AR specific settings
     WEBM_DURATION = 3  # seconds for webm character display
@@ -51,7 +53,7 @@ class ARConfig:
 # Create router for AR Photo endpoints
 router = APIRouter(prefix="/api/ar", tags=["AR Photo"])
 
-# Authentication setup (avoiding circular import)
+# Authentication setup
 security = HTTPBearer(auto_error=False)
 
 class ARPhotoError(Exception):
@@ -62,39 +64,39 @@ class ValidationError(Exception):
     """Custom exception for validation errors"""
     pass
 
-# Utility functions (copied from main to avoid circular import)
 def validate_file(file: UploadFile) -> None:
+    """Validate uploaded file"""
     if not file.filename:
         raise ValidationError("Filename tidak boleh kosong")
     
     file_ext = Path(file.filename).suffix.lower()
     if file_ext not in ARConfig.ALLOWED_EXTENSIONS:
         raise ValidationError(
-            f"Ekstensi file tidak didukung. Gunakan: {', '.join(ARConfig.ALLOWED_EXTENSIONS)}"
+            f"Ekstensi file tidak didukung. "
+            f"Maksimal {ARConfig.MAX_FILE_SIZE // (1024*1024)}MB"
         )
-    
-    mime_type = mimetypes.guess_type(file.filename)[0]
-    if mime_type not in ARConfig.ALLOWED_MIME_TYPES:
-        raise ValidationError(f"Tipe file tidak didukung: {mime_type}")
 
-def generate_unique_filename(original_filename: str, prefix: str = "") -> str:
+def generate_unique_filename(original_name: str, prefix: str = "") -> str:
+    """Generate unique filename with timestamp"""
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
     unique_id = str(uuid.uuid4())[:8]
-    file_ext = Path(original_filename).suffix.lower()
-    
-    safe_filename = f"{prefix}{timestamp}_{unique_id}{file_ext}"
-    return safe_filename
+    file_ext = Path(original_name).suffix.lower()
+    return f"{prefix}{timestamp}_{unique_id}{file_ext}"
 
-async def save_uploaded_file(file: UploadFile, save_path: Path) -> Path:
+async def save_uploaded_file(upload_file: UploadFile, save_path: Path) -> Path:
+    """Save uploaded file to specified path"""
     try:
+        save_path.parent.mkdir(parents=True, exist_ok=True)
+        
+        content = await upload_file.read()
+        
+        if len(content) > ARConfig.MAX_FILE_SIZE:
+            raise ValidationError(
+                f"File terlalu besar. "
+                f"Maksimal {ARConfig.MAX_FILE_SIZE // (1024*1024)}MB"
+            )
+        
         async with aiofiles.open(save_path, 'wb') as f:
-            content = await file.read()
-            
-            if len(content) > ARConfig.MAX_FILE_SIZE:
-                raise ValidationError(
-                    f"File terlalu besar. Maksimal {ARConfig.MAX_FILE_SIZE // (1024*1024)}MB"
-                )
-            
             await f.write(content)
         
         logger.info(f"File saved: {save_path}")
@@ -133,79 +135,98 @@ def generate_qr_code(data: str, size: int = ARConfig.QR_CODE_SIZE) -> str:
         return ""
 
 def apply_ar_overlay(base_image_path: Path, overlay_path: Path, output_path: Path) -> Path:
-    """Apply AR overlay to captured photo"""
+    """Apply AR overlay to captured photo - FIXED VERSION"""
     try:
-        logger.info(f"Applying AR overlay: base_image_path={base_image_path}, overlay_path={overlay_path}, output_path={output_path}")
+        logger.info(f"Applying AR overlay: base={base_image_path}, overlay={overlay_path}, output={output_path}")
 
+        # Check if overlay file exists
         if not overlay_path.exists():
             logger.warning(f"Overlay file not found: {overlay_path}")
+            # FIXED: Ensure output directory exists before copying
+            output_path.parent.mkdir(parents=True, exist_ok=True)
             shutil.copy2(base_image_path, output_path)
             return output_path
 
-        logger.info(f"Overlay file exists: {overlay_path}")
-
+        # Read base image
         base_img = cv2.imread(str(base_image_path), cv2.IMREAD_UNCHANGED)
         if base_img is None:
             logger.error(f"Cannot read base image: {base_image_path}")
             raise ARPhotoError(f"Cannot read base image: {base_image_path}")
 
-        logger.info(f"Base image loaded successfully: shape={base_img.shape}")
+        logger.info(f"Base image loaded: shape={base_img.shape}")
 
+        # Read overlay image with alpha channel support
         overlay_img = cv2.imread(str(overlay_path), cv2.IMREAD_UNCHANGED)
         if overlay_img is None:
             logger.warning(f"Cannot read overlay image: {overlay_path}")
+            output_path.parent.mkdir(parents=True, exist_ok=True)
             shutil.copy2(base_image_path, output_path)
             return output_path
 
-        logger.info(f"Overlay image loaded successfully: shape={overlay_img.shape}")
+        logger.info(f"Overlay image loaded: shape={overlay_img.shape}")
 
-        # Check if base image is valid before resizing overlay
-        if base_img is None:
-            logger.error(f"Base image is invalid, cannot resize overlay.")
-            shutil.copy2(base_image_path, output_path)
-            return output_path
+        # FIXED: Ensure base image has 3 channels (RGB)
+        if len(base_img.shape) == 3 and base_img.shape[2] == 4:
+            # Convert RGBA to RGB
+            base_img = cv2.cvtColor(base_img, cv2.COLOR_BGRA2BGR)
+        elif len(base_img.shape) == 2:
+            # Convert grayscale to RGB
+            base_img = cv2.cvtColor(base_img, cv2.COLOR_GRAY2BGR)
 
-        # Resize overlay to match base image
-        try:
-            overlay_img = cv2.resize(overlay_img, (base_img.shape[1], base_img.shape[0]))
-            logger.info(f"Overlay resized to: {overlay_img.shape}")
-        except Exception as e:
-            logger.error(f"Error resizing overlay: {e}")
-            shutil.copy2(base_image_path, output_path)
-            return output_path
+        # Resize overlay to match base image dimensions
+        h, w = base_img.shape[:2]
+        overlay_img = cv2.resize(overlay_img, (w, h), interpolation=cv2.INTER_AREA)
+        logger.info(f"Overlay resized to: {overlay_img.shape}")
 
-        # Apply overlay with alpha blending if available
-        if overlay_img.shape[2] == 4:  # Has alpha channel
-
+        # FIXED: Apply overlay with proper alpha blending
+        if len(overlay_img.shape) == 3 and overlay_img.shape[2] == 4:
+            # Overlay has alpha channel
             logger.info("Applying overlay with alpha channel")
-            alpha_mask = overlay_img[:, :, 3] / 255.0
-            alpha_mask = np.stack([alpha_mask] * 3, axis=2)
-
-            base_img_rgb = base_img[:, :, :3] if base_img.shape[2] >= 3 else base_img
-            overlay_img_rgb = overlay_img[:, :, :3]
-
-            result = (1 - alpha_mask) * base_img_rgb + alpha_mask * overlay_img_rgb
-            result = result.astype(np.uint8)
+            
+            # Extract alpha channel (0-255)
+            alpha = overlay_img[:, :, 3] / 255.0
+            alpha_inv = 1.0 - alpha
+            
+            # Apply alpha blending for each channel
+            for c in range(3):  # RGB channels
+                base_img[:, :, c] = (alpha * overlay_img[:, :, c] + 
+                                   alpha_inv * base_img[:, :, c])
+            
+            result = base_img.astype(np.uint8)
         else:
-            logger.info("Applying simple overlay without alpha")
-            # Simple overlay without alpha
-            result = cv2.addWeighted(base_img, 0.7, overlay_img, 0.3, 0)
+            # Simple overlay without alpha channel
+            logger.info("Applying simple overlay blend")
+            if len(overlay_img.shape) == 3 and overlay_img.shape[2] == 3:
+                result = cv2.addWeighted(base_img, 0.7, overlay_img, 0.3, 0)
+            else:
+                # If overlay is grayscale, convert to BGR
+                overlay_bgr = cv2.cvtColor(overlay_img, cv2.COLOR_GRAY2BGR)
+                result = cv2.addWeighted(base_img, 0.7, overlay_bgr, 0.3, 0)
 
-        # Save result
+        # FIXED: Ensure output directory exists
         output_path.parent.mkdir(parents=True, exist_ok=True)
+        
+        # Save result
         success = cv2.imwrite(str(output_path), result)
-
+        
         if not success:
+            logger.error(f"Failed to save result to: {output_path}")
             raise ARPhotoError("Failed to save AR overlay result")
 
-        logger.info(f"AR overlay applied: {output_path}")
+        logger.info(f"AR overlay applied successfully: {output_path}")
         return output_path
 
-        
     except Exception as e:
         logger.error(f"AR overlay error: {e}")
-        # Fallback: copy original file
-        shutil.copy2(base_image_path, output_path)
+        # FIXED: Ensure fallback works properly
+        try:
+            output_path.parent.mkdir(parents=True, exist_ok=True)
+            shutil.copy2(base_image_path, output_path)
+            logger.info(f"Fallback: copied original image to {output_path}")
+        except Exception as fallback_error:
+            logger.error(f"Fallback copy failed: {fallback_error}")
+            raise ARPhotoError(f"Complete failure in AR overlay: {e}")
+        
         return output_path
 
 def create_ar_directories():
@@ -215,34 +236,17 @@ def create_ar_directories():
         ARConfig.COUNTDOWN_DIR,
         ARConfig.THUMBNAIL_DIR,
         ARConfig.AR_RESULTS_DIR,
-        ARConfig.UPLOAD_DIR
+        ARConfig.UPLOAD_DIR,
+        ARConfig.FRAME_DIR  # FIXED: Ensure frame directory is created
     ]
     
     for directory in directories:
         directory.mkdir(parents=True, exist_ok=True)
         logger.info(f"AR directory created/verified: {directory}")
 
-def generate_countdown_videos():
-    """Generate countdown videos using script"""
-    try:
-        from countdown_generator import CountdownGenerator
-        generator = CountdownGenerator(ARConfig.COUNTDOWN_DIR)
-        countdown_files = generator.generate_all_countdowns()
-        logger.info("Countdown videos generated successfully")
-        return countdown_files
-    except ImportError:
-        logger.warning("Countdown generator not available")
-        return []
-    except Exception as e:
-        logger.error(f"Error generating countdown videos: {e}")
-        return []
-
-# Authentication dependency (will be injected from main.py)
+# Authentication dependency
 async def get_current_user_ar(credentials: Optional[HTTPAuthorizationCredentials] = Depends(security)):
-    """
-    This will be overridden by the main app when including the router
-    For now, we'll import auth service directly
-    """
+    """Authentication for AR endpoints"""
     if not credentials:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
@@ -250,12 +254,10 @@ async def get_current_user_ar(credentials: Optional[HTTPAuthorizationCredentials
         )
     
     try:
-        # Import here to avoid circular import
         from main import auth_service
         token = credentials.credentials
         return auth_service.get_user_by_token(token)
     except ImportError:
-        # Fallback for testing
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Authentication service not available"
@@ -265,13 +267,15 @@ async def get_current_user_ar(credentials: Optional[HTTPAuthorizationCredentials
 
 @router.get("/characters")
 async def list_ar_characters():
-    """List available AR character thumbnails and webm files"""
+    """FIXED: List available AR character thumbnails and webm files"""
     try:
         characters = []
         
         # Ensure directories exist
         ARConfig.THUMBNAIL_DIR.mkdir(parents=True, exist_ok=True)
         ARConfig.AR_ASSETS_DIR.mkdir(parents=True, exist_ok=True)
+        
+        logger.info(f"Scanning thumbnails in: {ARConfig.THUMBNAIL_DIR}")
         
         if ARConfig.THUMBNAIL_DIR.exists():
             for thumbnail_file in ARConfig.THUMBNAIL_DIR.iterdir():
@@ -281,35 +285,51 @@ async def list_ar_characters():
                     # Look for corresponding webm file
                     webm_file = ARConfig.AR_ASSETS_DIR / f"{character_name}.webm"
                     
+                    # FIXED: Also look for overlay frame
+                    frame_file = ARConfig.FRAME_DIR / f"{character_name}_frame.png"
+                    
                     character_data = {
                         "name": character_name,
+                        "display_name": character_name.replace('_', ' ').title(),
                         "thumbnail": f"/static/ar_assets/thumbnail/{thumbnail_file.name}",
                         "has_animation": webm_file.exists(),
-                        "animation_url": f"/static/ar_assets/{character_name}.webm" if webm_file.exists() else None
+                        "animation_url": f"/static/ar_assets/{character_name}.webm" if webm_file.exists() else None,
+                        "has_frame": frame_file.exists(),
+                        "frame_url": f"/static/ar_assets/frames/{character_name}_frame.png" if frame_file.exists() else None
                     }
                     
                     characters.append(character_data)
+                    logger.info(f"AR Character: {character_name} (webm: {webm_file.exists()}, frame: {frame_file.exists()})")
         
-        # If no characters exist, create sample data
+        # FIXED: Create sample data with proper structure
         if not characters:
             sample_characters = [
                 {
                     "name": "boy",
+                    "display_name": "Boy",
                     "thumbnail": "/static/ar_assets/thumbnail/boy.png",
                     "has_animation": True,
-                    "animation_url": "/static/ar_assets/boy.webm"
+                    "animation_url": "/static/ar_assets/boy.webm",
+                    "has_frame": True,
+                    "frame_url": "/static/ar_assets/frames/boy_frame.png"
                 },
                 {
-                    "name": "girl", 
+                    "name": "ghost", 
+                    "display_name": "Ghost",
                     "thumbnail": "/static/ar_assets/thumbnail/ghost.png",
                     "has_animation": True,
-                    "animation_url": "/static/ar_assets/ghost.webm"
+                    "animation_url": "/static/ar_assets/ghost.webm",
+                    "has_frame": True,
+                    "frame_url": "/static/ar_assets/frames/ghost_frame.png"
                 },
                 {
-                    "name": "superhero",
+                    "name": "superman",
+                    "display_name": "Superman",
                     "thumbnail": "/static/ar_assets/thumbnail/superman.png", 
                     "has_animation": True,
-                    "animation_url": "/static/ar_assets/superman.webm"
+                    "animation_url": "/static/ar_assets/superman.webm",
+                    "has_frame": True,
+                    "frame_url": "/static/ar_assets/frames/superman_frame.png"
                 }
             ]
             characters = sample_characters
@@ -327,68 +347,34 @@ async def list_ar_characters():
             detail="Failed to get AR characters"
         )
 
-@router.get("/assets/countdown")
-async def list_countdown_assets():
-    """List available countdown video files"""
-    try:
-        countdown_files = []
-        ARConfig.COUNTDOWN_DIR.mkdir(parents=True, exist_ok=True)
-        
-        if ARConfig.COUNTDOWN_DIR.exists():
-            for file_path in ARConfig.COUNTDOWN_DIR.iterdir():
-                if file_path.is_file() and file_path.suffix.lower() in ['.mp4', '.webm', '.mov']:
-                    countdown_files.append({
-                        "name": file_path.name,
-                        "path": f"/static/ar_assets/countdown/{file_path.name}",
-                        "duration": 1  # You can add actual duration detection here
-                    })
-        
-        # If no countdown files, create sample data
-        if not countdown_files:
-            sample_countdowns = [
-                {"name": "countdown_5.mp4", "path": "/static/ar_assets/countdown/countdown_5.mp4", "duration": 1},
-                {"name": "countdown_4.mp4", "path": "/static/ar_assets/countdown/countdown_4.mp4", "duration": 1},
-                {"name": "countdown_3.mp4", "path": "/static/ar_assets/countdown/countdown_3.mp4", "duration": 1},
-                {"name": "countdown_2.mp4", "path": "/static/ar_assets/countdown/countdown_2.mp4", "duration": 1},
-                {"name": "countdown_1.mp4", "path": "/static/ar_assets/countdown/countdown_1.mp4", "duration": 1},
-                {"name": "countdown_go.mp4", "path": "/static/ar_assets/countdown/countdown_go.mp4", "duration": 1}
-            ]
-            countdown_files = sample_countdowns
-        
-        return JSONResponse({
-            "success": True,
-            "countdown_assets": countdown_files,
-            "total_duration": len(countdown_files),
-            "count": len(countdown_files)
-        })
-    
-    except Exception as e:
-        logger.error(f"Error listing countdown assets: {e}")
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Failed to get countdown assets"
-        )
-
 @router.post("/photo")
 async def create_ar_photo(
     photo: UploadFile = File(...),
-    overlay_name: str = Form("frame1.png"),
+    character_name: str = Form(...),  # FIXED: Changed from overlay_name to character_name
     current_user = Depends(get_current_user_ar)
 ):
-    """Process captured photo with AR overlay"""
+    """FIXED: Process captured photo with AR overlay"""
     temp_files = []
     
     try:
+        # Check credits before proceeding (admin bypasses)
+        if current_user.get("role") != "admin":
+            if current_user.get("credit_balance", 0) < 1:
+                raise HTTPException(
+                    status_code=status.HTTP_402_PAYMENT_REQUIRED,
+                    detail="Insufficient credits. Please make a payment."
+                )
+        
         # Validate uploaded photo
         validate_file(photo)
+
         
         # Generate unique filename
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
         unique_id = str(uuid.uuid4())[:8]
         
         # Ensure directories exist
-        ARConfig.AR_RESULTS_DIR.mkdir(parents=True, exist_ok=True)
-        ARConfig.UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
+        create_ar_directories()
         
         # Save uploaded photo
         photo_filename = generate_unique_filename(photo.filename, "ar_capture_")
@@ -396,37 +382,81 @@ async def create_ar_photo(
         await save_uploaded_file(photo, photo_path)
         temp_files.append(photo_path)
         
-        # Define overlay path
-        overlay_path = ARConfig.FRAME_DIR / overlay_name
-        
-        # Create result filename
-        result_filename = f"ar_photo_{timestamp}_{unique_id}.png"
-        result_path = ARConfig.AR_RESULTS_DIR / result_filename
-        
-        
-        # Apply AR overlay
-        logger.info(f"Applying AR overlay: {photo_path} + {overlay_path}")
-        logger.info(f"ARConfig.AR_RESULTS_DIR: {ARConfig.AR_RESULTS_DIR}")
-        logger.info(f"result_path: {result_path}")
-        final_result_path = apply_ar_overlay(photo_path, overlay_path, result_path)
-        logger.info(f"final_result_path: {final_result_path}")
+        # --- Multi-layer overlay processing ---
 
-        # Generate download URL and QR code
-        download_url = f"/static/ar_results/{result_filename}"
+        # 1. Define paths for all overlays and results
+        character_frame_filename = f"{character_name.strip().lower()}_frame.png"
+
+        character_frame_path = ARConfig.FRAME_DIR / character_frame_filename
+
+        # --- DIAGNOSTIC LOGS ---
+        logger.info("--- JUMBO FRAME DIAGNOSTIC ---")
+        logger.info(f"Received character_name: '{character_name}'")
+        logger.info(f"Attempting to build path for: '{character_frame_filename}'")
+        logger.info(f"Full character_frame_path: '{character_frame_path}'")
+        logger.info(f"Does a file exist at this path? -> {character_frame_path.exists()}")
+        logger.info("--- END DIAGNOSTIC ---")
+
+        generic_frame_path = Path("static/images/frame1.png")
+
+        username = current_user["username"]
+        user_ar_dir = ARConfig.AR_RESULTS_DIR / username
+        user_ar_dir.mkdir(parents=True, exist_ok=True)
+
+        # Define paths for intermediate and final results
+        intermediate_filename = f"intermediate_{unique_id}.png"
+        intermediate_path = ARConfig.UPLOAD_DIR / intermediate_filename
+        temp_files.append(intermediate_path)
+
+        result_filename = f"{username}_ar_{character_name}_{timestamp}_{unique_id}.png"
+        result_path = user_ar_dir / result_filename
+
+        # 2. Step 1: Apply character-specific frame to the original photo
+        logger.info(f"Step 1: Applying character frame '{character_frame_path}' to '{photo_path}'")
+        intermediate_result_path = apply_ar_overlay(
+            photo_path, character_frame_path, intermediate_path
+        )
+
+        # 3. Step 2: Apply generic frame on top of the intermediate result
+        logger.info(f"Step 2: Applying generic frame '{generic_frame_path}' to '{intermediate_result_path}'")
+        final_result_path = apply_ar_overlay(
+            intermediate_result_path, generic_frame_path, result_path
+        )
+
+        
+        # FIXED: Verify result file exists and has content
+        if not final_result_path.exists() or final_result_path.stat().st_size == 0:
+            raise ARPhotoError("Result file was not created or is empty")
+        
+        logger.info(f"AR photo created: {final_result_path} (size: {final_result_path.stat().st_size} bytes)")
+
+        # Generate download URL and QR code with user-specific path
+        download_url = f"/static/ar_results/{username}/{result_filename}"
 
         full_download_url = f"{ARConfig.DOMAIN_URL}{download_url}"
         qr_code_data = generate_qr_code(full_download_url)
         
-        # Save to database
+        # Save to database, deduct credit, and record in 'photos' table
         try:
             from main import auth_service
             with auth_service.db_manager.get_connection() as conn:
+                credits_used = 0
+                # Deduct credit (if not admin)
+                if current_user.get("role") != "admin":
+                    credits_used = 1
+                    conn.execute(
+                        "UPDATE users SET credit_balance = credit_balance - 1 WHERE id = ?",
+                        (current_user["id"],)
+                    )
+
+                # Record photo in the modern 'photos' table
                 conn.execute("""
-                    INSERT INTO face_swap_history (user_id, template_name, result_filename)
-                    VALUES (?, ?, ?)
-                """, (current_user["id"], f"AR_OVERLAY_{overlay_name}", result_filename))
+                    INSERT INTO photos (user_id, filename, photo_type, template_name, file_path, credits_used)
+                    VALUES (?, ?, ?, ?, ?, ?)
+                """, (current_user["id"], result_filename, "ar_photo", character_name, str(final_result_path), credits_used))
                 conn.commit()
         except ImportError:
+
             logger.warning("Database service not available")
         
         response_data = {
@@ -437,21 +467,28 @@ async def create_ar_photo(
                 "result_filename": result_filename,
                 "qr_code": qr_code_data,
                 "download_url": full_download_url,
-                "overlay_used": overlay_name,
+                "character_used": character_name,
+                "overlay_used": f"{character_frame_filename} + {generic_frame_path.name}",
+
                 "processing_time": datetime.now().isoformat(),
-                "file_size": result_path.stat().st_size if result_path.exists() else 0
+                "file_size": final_result_path.stat().st_size
             }
         }
         
-        logger.info(f"AR photo created successfully: {final_result_path}")
+        logger.info(f"AR photo response: {response_data}")
         return JSONResponse(response_data)
     
     except Exception as e:
-        logger.error(f"Unexpected error in AR photo creation: {e}")
+        tb_str = traceback.format_exc()
+        logger.error(f"Error in AR photo creation: {e}\n{tb_str}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Terjadi kesalahan dalam pembuatan AR photo"
+            detail={
+                "message": f"Terjadi kesalahan dalam pembuatan AR photo: {str(e)}",
+                "traceback": tb_str,
+            }
         )
+
     
     finally:
         # Cleanup temporary files
@@ -463,9 +500,31 @@ async def create_ar_photo(
             except Exception as e:
                 logger.warning(f"Failed to cleanup {temp_file}: {e}")
 
+def create_simple_frame(frame_path: Path):
+    """Create a simple frame overlay if none exists"""
+    try:
+        # Create a simple border frame
+        frame_size = (640, 480)  # Default camera resolution
+        frame = np.zeros((frame_size[1], frame_size[0], 4), dtype=np.uint8)  # RGBA
+        
+        # Create border (white with transparency)
+        border_width = 20
+        frame[:border_width, :] = [255, 255, 255, 200]  # Top border
+        frame[-border_width:, :] = [255, 255, 255, 200]  # Bottom border
+        frame[:, :border_width] = [255, 255, 255, 200]  # Left border
+        frame[:, -border_width:] = [255, 255, 255, 200]  # Right border
+        
+        # Save frame
+        frame_path.parent.mkdir(parents=True, exist_ok=True)
+        cv2.imwrite(str(frame_path), frame)
+        logger.info(f"Created simple frame: {frame_path}")
+        
+    except Exception as e:
+        logger.error(f"Failed to create simple frame: {e}")
+
 @router.get("/overlays")
 async def list_ar_overlays():
-    """List available AR overlay frames"""
+    """FIXED: List available AR overlay frames"""
     try:
         overlays = []
         ARConfig.FRAME_DIR.mkdir(parents=True, exist_ok=True)
@@ -475,14 +534,19 @@ async def list_ar_overlays():
                 if file_path.is_file() and file_path.suffix.lower() in ARConfig.ALLOWED_EXTENSIONS:
                     overlays.append({
                         "name": file_path.name,
-                        "path": f"/static/images/{file_path.name}",
-                        "preview": f"/static/images/{file_path.name}"
+                        "path": f"/static/ar_assets/frames/{file_path.name}",
+                        "preview": f"/static/ar_assets/frames/{file_path.name}"
                     })
         
         # Default frame if no overlays exist
         if not overlays:
+            # Create default frame1.png
+            default_frame_path = ARConfig.FRAME_DIR / "frame1.png"
+            if not default_frame_path.exists():
+                create_simple_frame(default_frame_path)
+            
             overlays = [
-                {"name": "frame1.png", "path": "/static/images/frame1.png", "preview": "/static/images/frame1.png"}
+                {"name": "frame1.png", "path": "/static/ar_assets/frames/frame1.png", "preview": "/static/ar_assets/frames/frame1.png"}
             ]
         
         return JSONResponse({
@@ -504,31 +568,10 @@ async def ar_test():
     return {
         "success": True,
         "message": "AR Photo module working!",
-        "endpoints": [
-            "/api/ar/characters",
-            "/api/ar/photo",
-            "/api/ar/overlays",
-            "/api/ar/assets/countdown",
-            "/api/ar/test"
-        ],
-        "status": "OK"
+        "directories": {
+            "ar_assets": str(ARConfig.AR_ASSETS_DIR),
+            "thumbnails": str(ARConfig.THUMBNAIL_DIR),
+            "frames": str(ARConfig.FRAME_DIR),
+            "results": str(ARConfig.AR_RESULTS_DIR)
+        }
     }
-
-# Initialize AR Photo module
-def init_ar_photo():
-    """Initialize AR Photo module"""
-    try:
-        create_ar_directories()
-        
-        # Generate countdown videos if they don't exist
-        countdown_dir = ARConfig.COUNTDOWN_DIR
-        existing_countdowns = list(countdown_dir.glob("countdown_*.mp4"))
-        
-        if len(existing_countdowns) < 6:  # Should have 5 numbers + GO
-            logger.info("Generating countdown videos...")
-            generate_countdown_videos()
-        
-        logger.info("AR Photo module initialized successfully")
-    except Exception as e:
-        logger.error(f"Failed to initialize AR Photo module: {e}")
-        raise

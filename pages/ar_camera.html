@@ -97,8 +97,10 @@
         z-index: 30;
         display: none;
         white-space: nowrap;
+
         text-align: center;
         background: rgba(0, 0, 0, 0.8);
+
         padding: 20px;
         border-radius: 15px;
         backdrop-filter: blur(10px);
@@ -130,8 +132,10 @@
     <div id="overlay" class="overlay">READY</div>
     <div id="processingScreen" class="processing-screen">
         <div>Foto Anda sedang diproses...</div>
+
         <div style="font-size: 1rem; margin-top: 10px; opacity: 0.8;">Mohon tunggu sebentar</div>
     </div>
+
 </div>
 
 <audio id="cekrekSound" src="/static/images/cekrek.mp3" preload="auto"></audio>
@@ -315,10 +319,13 @@ function capturePhoto() {
 async function uploadPhoto(blob) {
     try {
         const formData = new FormData();
-        formData.append("webcam", blob, "capture.jpg");
-        formData.append("template_name", selectedCharacter.name);
+        // FIX: Use 'photo' as the key for the file to match the backend API
+        formData.append("photo", blob, "capture.jpg");
+        // FIX: Use 'character_name' to match the backend API
+        formData.append("character_name", selectedCharacter.name);
 
-        const response = await fetch("/api/ar_upload", {
+        // FIX: Use the correct API endpoint
+        const response = await fetch("/api/ar/photo", {
             method: "POST",
             headers: {
                 'Authorization': `Bearer ${token}`
@@ -328,38 +335,48 @@ async function uploadPhoto(blob) {
 
         const data = await response.json();
 
-        if (data.success) {
-            console.log('AR Upload successful:', data);
-            console.log('Credits remaining:', data.data?.credits_remaining);
+        if (response.ok && data.success) {
+            // Update credit display by reloading user data
+
+            await loadUserData();
             
-            // Update credit display
-            if (data.data?.credits_remaining !== undefined) {
-                document.getElementById('creditCount').textContent = data.data.credits_remaining;
-            }
-            
-            // Redirect to result page
-            const resultUrl = `/ar-result?img=${encodeURIComponent(data.filename)}`;
+            // Redirect to result page using the correct filename from the response
+            const resultUrl = `/ar-result?img=${encodeURIComponent(data.data.result_filename)}`;
             window.location.replace(resultUrl);
             
         } else {
-            console.error('Upload failed:', data);
+            // Enhanced error logging
+            console.error('Upload failed. Full server response:', data);
             
-            // Handle specific errors
+            let errorMessage = "Gagal simpan foto: Unknown error.";
+            if (data.detail) {
+                // Handle structured error from FastAPI
+                if (typeof data.detail === 'object' && data.detail.message) {
+                    errorMessage = data.detail.message;
+                    console.error("Server Traceback:\n", data.detail.traceback);
+                } else {
+                    errorMessage = data.detail;
+                }
+            } else if (data.error) {
+                errorMessage = data.error;
+            }
+
             if (response.status === 402) {
-                alert("Credit tidak mencukupi! Redirecting to payment...");
+                alert("Credit tidak mencukupi! Anda akan diarahkan ke halaman pembayaran.");
                 window.location.replace('/ar_payment');
             } else {
-                alert("Gagal simpan foto: " + (data.error || 'Unknown error'));
+                alert("Gagal simpan foto: " + errorMessage);
                 resetToCamera();
             }
         }
         
     } catch (error) {
-        console.error('Upload error:', error);
-        alert("Koneksi gagal. Silakan coba lagi.");
+        console.error('Network or unexpected error during upload:', error);
+        alert("Koneksi gagal atau terjadi kesalahan tak terduga. Silakan coba lagi.");
         resetToCamera();
     }
 }
+
 
 function showProcessingScreen() {
     video.style.display = "none";

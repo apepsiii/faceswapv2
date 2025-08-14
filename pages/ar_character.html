@@ -170,9 +170,10 @@ let userCredits = 0;
 
 // Character data
 const characters = [
-    { name: 'Jumbo.png' },
-    { name: 'minion.png' },
+    { name: 'Jumbo' },
+    { name: 'minion' },
 ];
+
 
 // Initialize page
 document.addEventListener('DOMContentLoaded', async function() {
@@ -227,8 +228,9 @@ function displayCharacters() {
     grid.innerHTML = '';
     
     characters.forEach(char => {
-        const imagePath = `/static/ar_assets/thumbnail/${char.name}`;
+        const imagePath = `/static/ar_assets/thumbnail/${char.name}.png`; // Append .png for display
         const item = document.createElement('div');
+
         item.className = 'menu-item';
         item.innerHTML = `<img src="${imagePath}" alt="${char.name}" onerror="this.onerror=null; this.src='data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjE4MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjNjY3ZWVhIi8+PHRleHQgeD0iNTAlIiB5PSI1MCUiIGZvbnQtZmFtaWx5PSJBcmlhbCwgc2Fucy1zZXJpZiIgZm9udC1zaXplPSIxNCIgZmlsbD0iI2ZmZiIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZHk9Ii4zZW0iPkFSIENIQVI8L3RleHQ+PC9zdmc+';">`;
         
@@ -248,8 +250,9 @@ async function selectCharacter(char, imgElement) {
     // Store selected character
     const selectedCharacter = { 
         name: char.name, 
-        path: `/static/ar_assets/thumbnail/${char.name}` 
+        path: `/static/ar_assets/thumbnail/${char.name}.png` // Append .png for path
     };
+
     localStorage.setItem('selectedCharacter', JSON.stringify(selectedCharacter));
     
     console.log('Character selected:', selectedCharacter);

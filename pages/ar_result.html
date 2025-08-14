@@ -78,7 +78,7 @@
     <h4>Scan QR Code untuk Download</h4>
     <div id="qrcode"></div>
     <div class="countdown">
-        Kamu akan kembali ke halaman karakter dalam <span id="countdown">20</span> detik...
+        Kamu akan kembali ke halaman karakter dalam <span id="countdown">30</span> detik...
     </div>
 </div>
 
@@ -93,16 +93,13 @@ if (!imgName) {
     localStorage.setItem("refreshOnce", "true");
     window.location.replace("/ar-character");
 } else {
-    if (!imgName) {
-    alert("Foto tidak ditemukan.");
-    localStorage.setItem("refreshOnce", "true");
-    window.location.replace("/ar-character");
-} else {
-    // Ekstrak username dari nama file (e.g., "mjn001_timestamp.png" -> "mjn001")
+    // REVERT: Ekstrak username dari nama file untuk membangun path yang benar
     const username = imgName.split('_')[0];
 
+    // FIX: Construct the correct URL with the username subfolder.
     const localUrl = `/static/ar_results/${username}/${imgName}`;
-    const serverUrl = `https://localhost:5000/static/ar_results/${username}/${imgName}`;
+    // FIX: Use a dynamic origin for the server URL to make it more robust.
+    const serverUrl = `${window.location.origin}/static/ar_results/${username}/${imgName}`;
 
     // Tampilkan foto dari lokal
     const resultImage = document.getElementById("resultImage");
@@ -123,8 +120,8 @@ if (!imgName) {
     });
 }
 
-// Countdown 20 detik otomatis kembali
-let countdown = 20;
+// Countdown 30 detik otomatis kembali
+let countdown = 30;
 const countdownEl = document.getElementById("countdown");
 
 const timer = setInterval(() => {

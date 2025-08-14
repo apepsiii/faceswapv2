@@ -34,6 +34,9 @@ from pydantic import BaseModel
 # Import payment integration
 from midtrans_config import core_api
 
+# Import AR Photo router
+from ar_photo import router as ar_photo_router
+
 # =============================================
 # CONFIGURATION & MODELS
 # =============================================
@@ -548,6 +551,9 @@ app.add_middleware(
 
 # Mount static files
 app.mount("/static", StaticFiles(directory="static"), name="static")
+
+# Include the AR Photo router
+app.include_router(ar_photo_router)
 
 # Initialize services
 auth_service = AuthService()
@@ -1196,179 +1202,6 @@ async def swap_faces_api(
 # AR PHOTO API ROUTES
 # =============================================
 
-@app.get("/api/ar/characters")
-async def ar_characters_dynamic():
-    """Dynamic AR characters from directory scan"""
-    try:
-        characters = []
-        
-        # Define directories  
-        thumbnail_dir = Path("static/ar_assets/thumbnail")
-        ar_assets_dir = Path("static/ar_assets")
-        
-        # Create directories if they don't exist
-        thumbnail_dir.mkdir(parents=True, exist_ok=True)
-        ar_assets_dir.mkdir(parents=True, exist_ok=True)
-        
-        # Scan thumbnail directory for real images
-        if thumbnail_dir.exists():
-            for thumbnail_file in thumbnail_dir.iterdir():
-                if thumbnail_file.is_file() and thumbnail_file.suffix.lower() in ['.png', '.jpg', '.jpeg', '.gif', '.webp']:
-                    character_name = thumbnail_file.stem
-                    
-                    # Look for corresponding webm animation file
-                    webm_file = ar_assets_dir / f"{character_name}.webm"
-                    has_animation = webm_file.exists()
-                    
-                    character_data = {
-                        "name": character_name,
-                        "display_name": character_name.replace('_', ' ').title(),
-                        "thumbnail": f"/static/ar_assets/thumbnail/{thumbnail_file.name}",
-                        "has_animation": has_animation,
-                        "animation_url": f"/static/ar_assets/{character_name}.webm" if has_animation else None,
-                        "type": "photo_ar"
-                    }
-                    
-                    characters.append(character_data)
-                    logger.info(f"AR Character found: {character_name} (webm: {has_animation})")
-        
-        if not characters:
-            return {
-                "success": True,
-                "characters": [],
-                "count": 0,
-                "message": "No AR characters found. Add thumbnail + webm files."
-            }
-        
-        return {
-            "success": True,
-            "characters": characters,
-            "count": len(characters),
-            "message": f"Found {len(characters)} AR characters"
-        }
-    
-    except Exception as e:
-        logger.error(f"Error scanning AR characters: {e}")
-        return {
-            "success": False,
-            "error": str(e),
-            "characters": [],
-            "count": 0
-        }
-
-@app.post("/api/ar_upload")
-async def ar_upload(
-    webcam: UploadFile = File(...), 
-    template_name: str = Form(...),
-    current_user = Depends(get_current_user)
-):
-    """Upload AR photo with credit deduction and user-specific folder"""
-    try:
-        # Check credits (skip for admin)
-        if current_user.get("role") != "admin":
-            if current_user.get("credit_balance", 0) < 1:
-                return JSONResponse(
-                    status_code=402,
-                    content={
-                        "success": False, 
-                        "error": "Insufficient credits. Please make a payment.",
-                        "credits_remaining": current_user.get("credit_balance", 0)
-                    }
-                )
-        
-        # Setup user-specific folder dengan Config yang benar
-        username = current_user["username"]
-        user_ar_dir = Config.AR_RESULTS_DIR / username
-        user_ar_dir.mkdir(parents=True, exist_ok=True)
-        
-        # Generate unique filename
-        clean_template_name = os.path.splitext(template_name)[0]
-        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-        unique_id = str(uuid.uuid4())[:8]
-        filename = f"{username}_{timestamp}_{unique_id}_{clean_template_name}.png"
-        save_path = user_ar_dir / filename
-        
-        # Save the original webcam capture first
-        await save_uploaded_file(webcam, save_path)
-
-        # Apply AR Frame Overlay
-        # e.g., template "Jumbo" -> frame "jumbo_frame.png"
-        frame_filename = f"{template_name.lower()}_frame.png"
-        frame_path = Config.AR_ASSETS_DIR / "frame_full" / frame_filename
-        
-        if frame_path.exists():
-            logger.info(f"Applying AR frame: {frame_path}")
-            overlay_result = apply_frame_overlay(
-                image_path=save_path,
-                frame_path=frame_path,
-                output_path=save_path  # Overwrite the original file
-            )
-            if overlay_result:
-                logger.info(f"Successfully applied AR frame to {save_path}")
-            else:
-                logger.warning(f"Failed to apply AR frame, returning original photo.")
-        else:
-            logger.warning(f"AR frame not found for template '{template_name}' at path: {frame_path}")
-        
-        # Deduct credit and record photo (skip for admin)
-        credits_used = 0
-        if current_user.get("role") != "admin":
-            credits_used = 1
-            
-            with auth_service.db_manager.get_connection() as conn:
-                # Deduct credit
-                conn.execute(
-                    "UPDATE users SET credit_balance = credit_balance - 1 WHERE id = ?",
-                    (current_user["id"],)
-                )
-                
-                # Record photo
-                conn.execute("""
-                    INSERT INTO photos (user_id, filename, photo_type, template_name, file_path, credits_used)
-                    VALUES (?, ?, ?, ?, ?, ?)
-                """, (
-                    current_user["id"], 
-                    filename, 
-                    "ar_photo", 
-                    template_name, 
-                    str(save_path), 
-                    credits_used
-                ))
-                
-                conn.commit()
-        
-        # Get updated credit balance
-        with auth_service.db_manager.get_connection() as conn:
-            cursor = conn.execute(
-                "SELECT credit_balance FROM users WHERE id = ?",
-                (current_user["id"],)
-            )
-            result = cursor.fetchone()
-            new_credit_balance = result[0] if result else 0
-        
-        logger.info(f"[AR UPLOAD SUCCESS] {username} - {filename} - Credits used: {credits_used}, Remaining: {new_credit_balance}")
-        
-        return JSONResponse(content={
-            "success": True, 
-            "filename": filename,
-            "message": f"AR photo saved successfully",
-            "data": {
-                "filename": filename,
-                "file_path": f"/static/ar_results/{username}/{filename}",
-                "template_used": template_name,
-                "credits_used": credits_used,
-                "credits_remaining": new_credit_balance,
-                "user": username,
-                "processing_time": datetime.now().isoformat()
-            }
-        })
-
-    except Exception as e:
-        logger.error(f"[AR UPLOAD ERROR] {e}")
-        return JSONResponse(
-            status_code=500,
-            content={"success": False, "error": str(e)}
-        )
 
 # =============================================
 # USER MANAGEMENT & ADMIN API ROUTES

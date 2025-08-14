@@ -918,11 +918,15 @@
                 if (user) {
                     let username = 'Unknown';
                     const userObj = this.users.find(u => String(u.id) === String(transaction.user_id));
+                    
                     if (userObj) {
                         username = userObj.username;
                     } else if (transaction.username) {
                         username = transaction.username;
                     }
+
+                    console.log(`Filtering by user: '${user}', Transaction user_id: '${transaction.user_id}', Found username: '${username}', Match: ${username === user}`);
+                    
                     if (username !== user) {
                         return false;
                     }

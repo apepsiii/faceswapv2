@@ -882,14 +882,14 @@ async def generate_qris_token(current_user = Depends(get_current_user_optional))
             conn.execute("""
                 INSERT INTO transactions (user_id, order_id, amount, credits_added, status)
                 VALUES (?, ?, ?, ?, ?)
-            """, (user_id, order_id, 5000, 3, "pending"))
+            """, (user_id, order_id, 1, 3, "pending"))
             conn.commit()
         
         payload = {
             "payment_type": "qris",
             "transaction_details": {
                 "order_id": order_id,
-                "gross_amount": 5000,
+                "gross_amount": 1,
             },
             "qris": {
                 "acquirer": "gopay"
@@ -2054,26 +2054,29 @@ async def get_transactions(admin_user = Depends(admin_required)):
     """Get all transactions for admin transaction history page"""
     try:
         with auth_service.db_manager.get_connection() as conn:
+            conn.row_factory = sqlite3.Row
             cursor = conn.execute("""
-                SELECT t.id, t.order_id, t.amount, t.credits_added, t.status, t.created_at, t.settled_at, u.username
+                SELECT t.*, u.username
                 FROM transactions t
                 LEFT JOIN users u ON t.user_id = u.id
                 ORDER BY t.created_at DESC
-                LIMIT 500
             """)
-            transactions = []
-            for row in cursor.fetchall():
-                transactions.append({
-                    "id": row[0],
-                    "order_id": row[1],
-                    "amount": row[2],
-                    "credits_added": row[3],
-                    "status": row[4],
-                    "created_at": row[5],
-                    "settled_at": row[6],
-                    "username": row[7] or "Unknown"
-                })
-            return {"success": True, "transactions": transactions, "count": len(transactions)}
+            transactions = [dict(row) for row in cursor.fetchall()]
+            
+            # Calculate stats
+            total_transactions = len(transactions)
+            total_revenue = sum(t['amount'] for t in transactions if t['status'] == 'settlement')
+            settlement_count = sum(1 for t in transactions if t['status'] == 'settlement')
+            pending_count = sum(1 for t in transactions if t['status'] == 'pending')
+            
+            stats = {
+                "total_transactions": total_transactions,
+                "total_revenue": total_revenue,
+                "settlement_count": settlement_count,
+                "pending_count": pending_count,
+            }
+            
+            return {"success": True, "transactions": transactions, "stats": stats}
     except Exception as e:
         return {"success": False, "error": str(e), "transactions": []}
 

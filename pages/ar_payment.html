@@ -247,7 +247,7 @@
       </div>
 
       <div class="auto-redirect-info" id="autoRedirectInfo">
-        Auto redirect to dashboard in <span id="countdown">20</span> seconds...
+        Auto redirect to dashboard in <span id="countdown">60</span> seconds...
       </div>
     </div>
   </div>
@@ -259,7 +259,7 @@
     const maxRetries = 3;
     let autoRedirectTimer = null;
     let countdownTimer = null;
-    let countdownSeconds = 20;
+    let countdownSeconds = 60;
 
     // Authenticated user check
     const token = localStorage.getItem('token');
@@ -280,12 +280,12 @@
 
     // Start auto-redirect countdown (20 seconds)
     function startAutoRedirect() {
-      console.log('[REDIRECT] Starting 20-second countdown to dashboard');
+      console.log('[REDIRECT] Starting 60-second countdown to dashboard');
       
       const countdownElement = document.getElementById('countdown');
       const redirectInfo = document.getElementById('autoRedirectInfo');
       
-      countdownSeconds = 20;
+      countdownSeconds = 60;
       countdownElement.textContent = countdownSeconds;
       
       countdownTimer = setInterval(() => {
@@ -302,7 +302,7 @@
       // Also set main redirect timer
       autoRedirectTimer = setTimeout(() => {
         window.location.replace('/dashboard');
-      }, 20000);
+      }, 60000);
     }
 
     // Stop auto-redirect countdown

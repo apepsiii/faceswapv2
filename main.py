@@ -757,6 +757,42 @@ def swap_faces(src_path: Path, dst_path: Path, output_path: Path) -> Path:
         logger.error(f"Face swap error: {e}")
         raise FaceSwapError(f"Error dalam proses face swap: {e}")
 
+def apply_frame_overlay(image_path: Path, frame_path: Path, output_path: Path) -> Path:
+    """
+    Applies a frame overlay to an image.
+    
+    Args:
+        image_path: Path to the source image.
+        frame_path: Path to the frame image with transparency.
+        output_path: Path to save the result.
+        
+    Returns:
+        Path to the framed image.
+    """
+    try:
+        # Load images using Pillow
+        background = Image.open(image_path).convert("RGBA")
+        overlay = Image.open(frame_path).convert("RGBA")
+
+        # Resize overlay to fit background
+        overlay = overlay.resize(background.size, Image.Resampling.LANCZOS)
+        
+        # Create a new blank canvas
+        framed_image = Image.new("RGBA", background.size)
+        
+        # Paste background, then overlay on top
+        framed_image.paste(background, (0, 0))
+        framed_image.paste(overlay, (0, 0), mask=overlay) # Use overlay's alpha channel as mask
+        
+        # Convert back to RGB for saving as JPG/PNG without alpha issues
+        framed_image.convert("RGB").save(output_path)
+
+        logger.info(f"🖼️ Applied frame '{frame_path.name}' to '{image_path.name}' -> '{output_path.name}'")
+        return output_path
+    except Exception as e:
+        logger.error(f"❌ Error applying frame: {e}")
+        logger.error(traceback.format_exc())
+        return None
 # =============================================
 # FRONTEND ROUTES
 # =============================================
@@ -1056,11 +1092,26 @@ async def swap_faces_api(
         swap_result_path = swap_faces(source_path, template_path, result_path)
         
         # Apply frame if requested
+        final_image_path = result_path
+        final_filename = result_filename
+
         if apply_frame:
             frame_path = Config.FRAME_DIR / "frame1.png"
             if frame_path.exists():
-                # Apply frame overlay (simplified implementation)
-                pass
+                framed_filename = f"{result_path.stem}_framed.png"
+                framed_image_path = result_path.parent / framed_filename
+                
+                overlay_result = apply_frame_overlay(
+                    image_path=result_path,
+                    frame_path=frame_path,
+                    output_path=framed_image_path
+                )
+
+                if overlay_result:
+                    final_image_path = overlay_result
+                    final_filename = framed_filename
+                else:
+                    logger.warning(f"Could not apply frame, serving original image.")
         
         # Deduct credit and record photo
         with auth_service.db_manager.get_connection() as conn:
@@ -1088,8 +1139,8 @@ async def swap_faces_api(
             "success": True,
             "message": "Face swap berhasil dilakukan",
             "data": {
-                "result_url": f"/static/results/{username}/{result_filename}",
-                "result_filename": result_filename,
+                "result_url": f"/static/results/{username}/{final_filename}",
+                "result_filename": final_filename,
                 "template_used": template_name,
                 "faces_detected": {
                     "source": len(detect_faces(source_path)),
